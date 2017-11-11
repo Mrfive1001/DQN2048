@@ -53,6 +53,7 @@ class GabrieleCirulli2048(tk.Tk):
         for k, v in kw:
             print("Key = {}, value = {}".format(k, v))
         self.initialize(**kw)
+        self.ai_time = 100
         # self.nn = NeuralNetwork(
         #     16, 16, 4)
         # self.nn.inspect()
@@ -179,7 +180,7 @@ class GabrieleCirulli2048(tk.Tk):
             )
         # end if
         self.playloops = 0
-        self.after(100, self.ai_pressed)  # 多长时间后调用下一次ai_pressed
+        self.after(self.ai_time, self.ai_pressed)  # 多长时间后调用下一次ai_pressed
         self.bind_all("<Key>", self.on_keypressed)
 
     # end def
@@ -189,7 +190,6 @@ class GabrieleCirulli2048(tk.Tk):
     def ai_pressed(self, tk_event=None, *args, **kw):
         self.playloops = self.playloops + 1
         matrix = self.grid.matrix.matrix
-        ai_time = 100
         # get the values of cells
         mat2048 = np.zeros((4, 4))
         tiles = self.grid.tiles
@@ -228,10 +228,11 @@ class GabrieleCirulli2048(tk.Tk):
             # self.ai_new_game()  # play ai again
             pass
         else:
-            self.after(ai_time, self.ai_pressed)  # ai press again after 200 ms
+            self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
     # 修改这个子程序
     def ai_move(self, mat2048):
+        # 输入是2048表格的2对数，输出1~4，表示上下左右
         return random.randint(1, 4)
 
     # def ai_move(self, mat2048):
@@ -310,41 +311,6 @@ class GabrieleCirulli2048(tk.Tk):
     #         move = random.choice((1, 3))
     #         print("其他，随机右，下")
     #     return move
-
-    def neural_move(self, mat2048):
-        matinput = np.reshape(mat2048, (16))
-        matinput = matinput / matinput.max()
-        print(matinput)
-        ret = self.nn.feed_forward(matinput)
-        self.nnoutput = np.array(self.nn.output_layer.get_outputs())
-        print(self.nnoutput)
-        return self.nnoutput
-        # print(self.nn.inspect())
-        # for o in range(len(self.nn.output_layer.neurons)):
-        #     print(self.nn.output_layer.neurons[
-        #         o].calculate_total_net_input())
-
-    def can_moverright(self, mat2048):
-        # 在不能消除的情况下判断是不是不能
-        for i in range(4):
-            st = []
-            for j in range(4, -1):  # 判断两个相邻不等于0的数是否相等，相等表示何以和
-                if len(st) == 0:
-                    if mat2048[j, i] > 0:
-                        st.append(mat2048[j, i])
-                    else:
-                        pass
-                else:
-                    if mat2048[j, i] > 0:
-                        if st.pop() == mat2048[j, i]:
-                            eq_col[i] += mat2048[j, i]
-                        else:
-                            st.append(mat2048[j, i])
-                    else:
-                        pass
-
-
-# end class
 
 if __name__ == "__main__":
     GabrieleCirulli2048().run()
