@@ -29,7 +29,7 @@ import copy
 import numpy as np
 
 try:
-    import Tkinter as tk
+    import tkinter as tk
     import ttk
     import tkMessageBox as messagebox
 except:
@@ -189,7 +189,7 @@ class GabrieleCirulli2048(tk.Tk):
     def ai_pressed(self, tk_event=None, *args, **kw):
         self.playloops = self.playloops + 1
         matrix = self.grid.matrix.matrix
-
+        ai_time = 100
         # get the values of cells
         mat2048 = np.zeros((4, 4))
         tiles = self.grid.tiles
@@ -228,85 +228,88 @@ class GabrieleCirulli2048(tk.Tk):
             # self.ai_new_game()  # play ai again
             pass
         else:
-            self.after(100, self.ai_pressed)  # ai press again after 200 ms
+            self.after(ai_time, self.ai_pressed)  # ai press again after 200 ms
 
     # 修改这个子程序
     def ai_move(self, mat2048):
-        # mat2048 是4X4的矩阵，放着的是棋盘的数据
-        move = 0
-        imax = mat2048.argmax()
-        imaxrow = int(imax / 4)
-        imaxcol = imax - imaxrow * 4
+        return random.randint(1, 4)
 
-        eq_col = np.zeros(4)  # 获得是否列中存在合并的数，如果没有，这一列就等于0
-
-        for i in range(4):
-            st = []
-            for j in range(4):  # 判断两个相邻不等于0的数是否相等，相等表示何以和
-                if len(st) == 0:
-                    if mat2048[j, i] > 0:
-                        st.append(mat2048[j, i])
-                    else:
-                        pass
-                else:
-                    if mat2048[j, i] > 0:
-                        if st.pop() == mat2048[j, i]:
-                            eq_col[i] += mat2048[j, i]
-                        else:
-                            st.append(mat2048[j, i])
-                    else:
-                        pass
-                        # print(st)
-        print(eq_col)
-
-        eq_row = np.zeros(4)  # 获得是否行中存在合并的数，如果没有，这一行就等于0
-        for i in range(4):
-            st = []
-            for j in range(4):
-                if len(st) == 0:
-                    if mat2048[i, j] > 0:
-                        st.append(mat2048[i, j])
-                    else:
-                        pass
-                else:
-                    if mat2048[i, j] > 0:
-                        if st.pop() == mat2048[i, j]:
-                            eq_row[i] += mat2048[i, j]
-                        else:
-                            st.append(mat2048[i, j])
-                    else:
-                        pass
-                        # print(st)
-        print(eq_row)
-
-        if imaxrow < 3 and mat2048[(imaxrow + 1):4, imaxcol].sum() == 0:
-            move = 4  # 最大数不在最底下，同时最大数下面为空，下移
-            print("最大数不在最底下，同时最大数下面为空，下移")
-        elif imaxcol < 3 and mat2048[imaxrow, (imaxcol + 1):4].sum() == 0:
-            move = 2  # 最大数不在最右边，同时最大数右边为空，右移
-            print("最大数不在最右边，同时最大数右边为空，右移")
-        elif eq_col.sum() >= eq_row.sum() and eq_col.sum() > 0:
-            move = 4  # 如果向下合并可以合并更多,向下
-            print("如果向下合并可以合并更多,向下")
-        elif eq_row.sum() > eq_col.sum() and eq_row.sum() > 0:
-            move = 2  # 如果向右可以合并更多,向右
-            print("如果向右可以合并更多,向右")
-        elif sum(mat2048[imaxrow, :]) > sum(mat2048[:, imaxcol]):
-            # 向右，向下都没有合并的情况
-            # 判断最大数那一行和列哪个数更多
-            # 如果行更多，就向左，尽可能保证最大数不动
-            move = random.choice((1, 2))
-            print("向右，向下都没有，最大数所在行的数比较多，向左右随机")
-        elif sum(mat2048[imaxrow, :]) < sum(mat2048[:, imaxcol]):
-            # 向右，向下都没有合并的情况
-            # 判断最大数那一行和列哪个数更多
-            # 如果列更多，就向上，尽可能保证最大数不动
-            move = random.choice((3, 4))
-            print("向右，向下都没有，最大数所在列的数比较多，向上下随机")
-        else:
-            move = random.choice((1, 3))
-            print("其他，随机右，下")
-        return move
+    # def ai_move(self, mat2048):
+    #     # mat2048 是4X4的矩阵，放着的是棋盘的数据
+    #     move = 0
+    #     imax = mat2048.argmax()
+    #     imaxrow = int(imax / 4)
+    #     imaxcol = imax - imaxrow * 4
+    #
+    #     eq_col = np.zeros(4)  # 获得是否列中存在合并的数，如果没有，这一列就等于0
+    #
+    #     for i in range(4):
+    #         st = []
+    #         for j in range(4):  # 判断两个相邻不等于0的数是否相等，相等表示何以和
+    #             if len(st) == 0:
+    #                 if mat2048[j, i] > 0:
+    #                     st.append(mat2048[j, i])
+    #                 else:
+    #                     pass
+    #             else:
+    #                 if mat2048[j, i] > 0:
+    #                     if st.pop() == mat2048[j, i]:
+    #                         eq_col[i] += mat2048[j, i]
+    #                     else:
+    #                         st.append(mat2048[j, i])
+    #                 else:
+    #                     pass
+    #                     # print(st)
+    #     print(eq_col)
+    #
+    #     eq_row = np.zeros(4)  # 获得是否行中存在合并的数，如果没有，这一行就等于0
+    #     for i in range(4):
+    #         st = []
+    #         for j in range(4):
+    #             if len(st) == 0:
+    #                 if mat2048[i, j] > 0:
+    #                     st.append(mat2048[i, j])
+    #                 else:
+    #                     pass
+    #             else:
+    #                 if mat2048[i, j] > 0:
+    #                     if st.pop() == mat2048[i, j]:
+    #                         eq_row[i] += mat2048[i, j]
+    #                     else:
+    #                         st.append(mat2048[i, j])
+    #                 else:
+    #                     pass
+    #                     # print(st)
+    #     print(eq_row)
+    #
+    #     if imaxrow < 3 and mat2048[(imaxrow + 1):4, imaxcol].sum() == 0:
+    #         move = 4  # 最大数不在最底下，同时最大数下面为空，下移
+    #         print("最大数不在最底下，同时最大数下面为空，下移")
+    #     elif imaxcol < 3 and mat2048[imaxrow, (imaxcol + 1):4].sum() == 0:
+    #         move = 2  # 最大数不在最右边，同时最大数右边为空，右移
+    #         print("最大数不在最右边，同时最大数右边为空，右移")
+    #     elif eq_col.sum() >= eq_row.sum() and eq_col.sum() > 0:
+    #         move = 4  # 如果向下合并可以合并更多,向下
+    #         print("如果向下合并可以合并更多,向下")
+    #     elif eq_row.sum() > eq_col.sum() and eq_row.sum() > 0:
+    #         move = 2  # 如果向右可以合并更多,向右
+    #         print("如果向右可以合并更多,向右")
+    #     elif sum(mat2048[imaxrow, :]) > sum(mat2048[:, imaxcol]):
+    #         # 向右，向下都没有合并的情况
+    #         # 判断最大数那一行和列哪个数更多
+    #         # 如果行更多，就向左，尽可能保证最大数不动
+    #         move = random.choice((1, 2))
+    #         print("向右，向下都没有，最大数所在行的数比较多，向左右随机")
+    #     elif sum(mat2048[imaxrow, :]) < sum(mat2048[:, imaxcol]):
+    #         # 向右，向下都没有合并的情况
+    #         # 判断最大数那一行和列哪个数更多
+    #         # 如果列更多，就向上，尽可能保证最大数不动
+    #         move = random.choice((3, 4))
+    #         print("向右，向下都没有，最大数所在列的数比较多，向上下随机")
+    #     else:
+    #         move = random.choice((1, 3))
+    #         print("其他，随机右，下")
+    #     return move
 
     def neural_move(self, mat2048):
         matinput = np.reshape(mat2048, (16))
