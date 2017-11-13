@@ -28,6 +28,7 @@ import random
 import copy
 import numpy as np
 import time
+import pickle
 
 try:
     import tkinter as tk
@@ -51,7 +52,7 @@ class GabrieleCirulli2048(tk.Tk):
         tk.Tk.__init__(self)
         self.initialize(**kw)
         self.ai_time = 100
-        self.train = 0
+        self.train = 1
         # self.nn = NeuralNetwork(
         #     16, 16, 4)
         # self.nn.inspect()
@@ -81,7 +82,7 @@ class GabrieleCirulli2048(tk.Tk):
         self.hint = ttk.Label(
             self, text="Hint: use keyboard arrows to move tiles."
         )
-        self.grid = GG.Game2048Grid(self, **kw)   # 窗格
+        self.grid = GG.Game2048Grid(self, **kw)  # 窗格
         self.score = GS.Game2048Score(self, **kw)
         self.hiscore = GS.Game2048Score(self, label="Highest:", **kw)
         self.grid.pack(side=tk.TOP, padx=_pad, pady=_pad)
@@ -125,11 +126,13 @@ class GabrieleCirulli2048(tk.Tk):
     # end def
 
     def run(self, **kw):
-        self.ai_train()
-        self.center_window()
-        self.deiconify()
-        self.new_game(**kw)
-        self.mainloop()
+        if self.train:
+            self.ai_train()
+        else:
+            self.center_window()
+            self.deiconify()
+            self.new_game(**kw)
+            self.mainloop()
 
     # end def
 
@@ -323,25 +326,19 @@ class GabrieleCirulli2048(tk.Tk):
     #         print("其他，随机右，下")
     #     return move
 
-    def ai_train(self, epi=1):
-        self.train = 1
-        self.unbind_all("<Key>")
+    def ai_train(self, epi=1000):
         for i in range(epi):
-            # start = time.clock()
             self.playloops = 0
-            # if i == 200:
-            #     print("woshiyixia")
-            #     pass
+            if i == 5:
+                print("woshiyixia")
+                pass
             self.score.reset_score()
-            self.grid.reset_grid()
+            self.grid.clear_all()
             for n in range(self.START_TILES):
-                self.grid.pop_tile()
-            # self.playloops = 0
+                self.grid.pop_tile() #对象加1
             self.ai_pressed()
-            # end = time.clock()
-            # print(i, "时间：", end - start, 's', '循环次数：', self.playloops)
-            print(i, '循环次数：', self.playloops)
-        self.train = 0
+            print(i + 1, '循环次数：', self.playloops)
+        print("训练结束")
 
 
 if __name__ == "__main__":
