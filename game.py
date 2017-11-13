@@ -27,6 +27,7 @@
 import random
 import copy
 import numpy as np
+import time
 
 try:
     import tkinter as tk
@@ -190,9 +191,9 @@ class GabrieleCirulli2048(tk.Tk):
     # 在这个子程序里面运行一次AI操作
     def ai_pressed(self, tk_event=None, *args, **kw):
         if not self.train:
-            self.playloops = self.playloops + 1
             matrix = self.grid.matrix.matrix
         # get the values of cells
+        self.playloops = self.playloops + 1
         mat2048 = np.zeros((4, 4))
         tiles = self.grid.tiles
         for t in tiles:
@@ -210,7 +211,8 @@ class GabrieleCirulli2048(tk.Tk):
         # 4 move to down
         # pressed = int(random.choice((1, 2, 3, 4)))
         pressed = self.ai_move(mat2048)  # this is random control
-
+        if self.playloops == 1 and self.train:
+            start = time.clock()
         if pressed == 1:
             if not self.train:
                 print("Move left\n")
@@ -229,7 +231,9 @@ class GabrieleCirulli2048(tk.Tk):
             self.grid.move_tiles_down()
         else:
             pass
-
+        if self.playloops == 1 and self.train:
+            end = time.clock()
+            print("时间：", (end - start)*100, 's')
         if self.grid.no_more_hints():  # game over
             # self.ai_new_game()  # play ai again
             pass
@@ -321,17 +325,24 @@ class GabrieleCirulli2048(tk.Tk):
     #         print("其他，随机右，下")
     #     return move
 
-    def ai_train(self, epi=10000):
+    def ai_train(self, epi=300):
         self.train = 1
         self.unbind_all("<Key>")
         for i in range(epi):
-            print(i)
+            # start = time.clock()
+            self.playloops = 0
+            # if i == 200:
+            #     print("woshiyixia")
+            #     pass
             self.score.reset_score()
             self.grid.reset_grid()
             for n in range(self.START_TILES):
                 self.grid.pop_tile()
             # self.playloops = 0
             self.ai_pressed()
+            # end = time.clock()
+            # print(i, "时间：", end - start, 's', '循环次数：', self.playloops)
+            print(i, '循环次数：', self.playloops)
         self.train = 0
 
 
