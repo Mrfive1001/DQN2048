@@ -41,8 +41,6 @@ except:
 from src import game2048_score as GS
 from src import game2048_grid as GG
 
-from src.neuralnetwork import NeuralNetwork
-
 
 class GabrieleCirulli2048(tk.Tk):
     PADDING = 10
@@ -149,13 +147,13 @@ class GabrieleCirulli2048(tk.Tk):
         except:
             pass
 
-        tiles = self.grid.tiles
+        tiles = self.grid.tiles  # 包含的窗格的地方和值
         # print("tiles = {}".format(tiles))
         for t in tiles:
             print("Tile id = {}, tile row = {}, tile column = {}, value = {}".
                   format(t, tiles[t].row, tiles[t].column, tiles[t].value))
         print("--------------------------")
-
+        # print(self.score.get_score()) # 读取分数
         # end try
 
     # end def

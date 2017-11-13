@@ -42,7 +42,7 @@ class GameScore (ttk.Frame):
         self.CONFIG = self.CONFIG.copy()
         self.CONFIG.update(kw)
         self.configure(**self._only_tk(self.CONFIG))
-        self._cvar = tk.IntVar()
+        self._cvar = tk.IntVar()  # 分数
         self.init_widget(**self.CONFIG)
     # end def
 
