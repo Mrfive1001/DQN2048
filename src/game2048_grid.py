@@ -37,12 +37,11 @@ except:
 from . import game_grid as GG
 
 
-class Game2048Grid (GG.GameGrid):
-
+class Game2048Grid(GG.GameGrid):
     BGCOLOR = "#ccc0b3"
     FGCOLOR = "#bbada0"
     ROWS = COLUMNS = 4
-    THICKNESS = 8   # pixels
+    THICKNESS = 8  # pixels
     CONFIG = dict(
         background=BGCOLOR, highlightthickness=0, width=400, height=400
     )
@@ -51,11 +50,13 @@ class Game2048Grid (GG.GameGrid):
         # 动画图像
         self.tag_raise(item_id, tk.ALL)
         self.itemconfigure(item_id, stipple=value)
+
     # end def
 
     def animate_text_game_over(self, item_id, value):
         self.tag_raise(item_id, tk.ALL)
         self.itemconfigure(item_id, fill=value, state=tk.NORMAL)
+
     # end def
 
     def animate_text_try_again(self, item_id, value):
@@ -75,6 +76,7 @@ class Game2048Grid (GG.GameGrid):
             )
         """
         # end if
+
     # end def
 
     def fuse_tiles(self, into_tile, void_tile):
@@ -90,6 +92,7 @@ class Game2048Grid (GG.GameGrid):
             return True
         # end if - matching tiles
         return False
+
     # end def
 
     def game_over(self, tk_event=None, *args, **kw):
@@ -135,6 +138,7 @@ class Game2048Grid (GG.GameGrid):
             sequence=("#c9bdb4", "#d0c5be", "#d7cdc8", "#ded5d2",
                       "#e5dddc", "#ece5e6", "#f3edf0", "#ffffff"),
         )
+
     # end def
 
     def get_available_box(self):
@@ -148,22 +152,25 @@ class Game2048Grid (GG.GameGrid):
                 for _column in range(self.columns):
                     if not _at(_row, _column):
                         stor.append((_row, _column))
-                # end if
+                        # end if
             # end while
             return random.choice(stor)
-        # end if - no more room
+            # end if - no more room
+
     # end def
 
     def init_widget(self, **kw):
         self.__score_cvar = tk.IntVar()
         self.__score_callback = None
+
     # end def
 
     def move_tile(self, tile, row, column):
         if tile:
             self.matrix.move_object(tile.row_column, (row, column))
             tile.animate_move_to(row, column)
-        # end if
+            # end if
+
     # end def
 
     def move_tiles_down(self):
@@ -181,8 +188,8 @@ class Game2048Grid (GG.GameGrid):
                         # end if
                         if _tile2:
                             break
-                    # end for - next tile
-                # end if - tile
+                            # end for - next tile
+                            # end if - tile
             # end for - fusions
             _empty = None
             for _row in range(self.rows - 1, -1, -1):
@@ -193,10 +200,11 @@ class Game2048Grid (GG.GameGrid):
                     self.move_tile(_tile1, *_empty)
                     _empty = (_empty[0] - 1, _column)
                     _acted = True
-                # end if
-            # end for - scrollings
+                    # end if
+                    # end for - scrollings
         # end for - row
         self.next_tile(acted=_acted)
+
     # end def
 
     def move_tiles_left(self):
@@ -213,8 +221,8 @@ class Game2048Grid (GG.GameGrid):
                         # end if
                         if _tile2:
                             break
-                    # end for - next tile
-                # end if - tile
+                            # end for - next tile
+                            # end if - tile
             # end for - fusions
             _empty = None
             for _column in range(self.columns):
@@ -225,10 +233,11 @@ class Game2048Grid (GG.GameGrid):
                     self.move_tile(_tile1, *_empty)
                     _empty = (_row, _empty[1] + 1)
                     _acted = True
-                # end if
-            # end for - scrollings
+                    # end if
+                    # end for - scrollings
         # end for - row
         self.next_tile(acted=_acted)
+
     # end def
 
     def move_tiles_right(self):
@@ -245,8 +254,8 @@ class Game2048Grid (GG.GameGrid):
                         # end if
                         if _tile2:
                             break
-                    # end for - next tile
-                # end if - tile
+                            # end for - next tile
+                            # end if - tile
             # end for - fusions
             _empty = None
             for _column in range(self.columns - 1, -1, -1):
@@ -257,10 +266,11 @@ class Game2048Grid (GG.GameGrid):
                     self.move_tile(_tile1, *_empty)
                     _empty = (_row, _empty[1] - 1)
                     _acted = True
-                # end if
-            # end for - scrollings
+                    # end if
+                    # end for - scrollings
         # end for - row
         self.next_tile(acted=_acted)
+
     # end def
 
     def move_tiles_up(self):
@@ -277,8 +287,8 @@ class Game2048Grid (GG.GameGrid):
                         # end if
                         if _tile2:
                             break
-                    # end for - next tile
-                # end if - tile
+                            # end for - next tile
+                            # end if - tile
             # end for - fusions
             _empty = None
             for _row in range(self.rows):
@@ -289,19 +299,21 @@ class Game2048Grid (GG.GameGrid):
                     self.move_tile(_tile1, *_empty)
                     _empty = (_empty[0] + 1, _column)
                     _acted = True
-                # end if
-            # end for - scrollings
+                    # end if
+                    # end for - scrollings
         # end for - row
         self.next_tile(acted=_acted)
+
     # end def
 
     def next_tile(self, tk_event=None, *args, **kw):
         if kw.get("acted"):
-            self.pop_tile() # 加入一个
+            self.pop_tile()  # 加入一个
         # end if
         if self.no_more_hints():
             self.game_over()
-        # end if
+            # end if
+
     # end def
 
     def no_more_hints(self):
@@ -313,26 +325,28 @@ class Game2048Grid (GG.GameGrid):
                     _tile2 = _at(_row, _column + 1)
                     _tile3 = _at(_row + 1, _column)
                     if _tile1 and (
-                        (_tile2 and _tile1.value == _tile2.value) or
-                            (_tile3 and _tile1.value == _tile3.value)):
+                                (_tile2 and _tile1.value == _tile2.value) or
+                                (_tile3 and _tile1.value == _tile3.value)):
                         return False
-                    # end if
-                # end for - columns
+                        # end if
+                        # end for - columns
             # end for - rows
             return True
         # end if - no more room
         return False
+
     # end def
 
     def pop_tile(self, tk_event=None, *args, **kw):
         if not self.is_full():
             _value = random.choice([2, 4, 2, 2])
             _row, _column = self.get_available_box()
-            _tile = Game2048GridTile(self, _value, _row, _column)  # 定义一块砖
+            _tile = Game2048GridTile(self, _value, _row, _column, self.train)  # 定义一块砖
             _tile.animate_show()
             self.register_tile(_tile.id, _tile)
-            self.matrix.add(_tile, *_tile.row_column, raise_error=True) # 加入到Matrix
-        # end if - room in grid
+            self.matrix.add(_tile, *_tile.row_column, raise_error=True)  # 加入到Matrix
+            # end if - room in grid
+
     # end def
 
     def set_score_callback(self, callback, raise_error=False):
@@ -342,24 +356,27 @@ class Game2048Grid (GG.GameGrid):
             raise TypeError(
                 "callback parameter *MUST* be a callable object."
             )
-        # end if
+            # end if
+
     # end def
 
     def tiles_match(self, tile1, tile2):
         return tile1 and tile2 and tile1.value == tile2.value
+
     # end def
 
     def update_score(self, value, mode="add"):
         # 更新分数的值
         if callable(self.__score_callback):
             self.__score_callback(value, mode)
-        # end if
-    # end def
+            # end if
+            # end def
+
 
 # end class
 
 
-class Game2048GridTile (GG.GridTile):
+class Game2048GridTile(GG.GridTile):
     COLORS = {
         2: ("#eee4da", "#776e65"),
         4: ("#ede0c8", "#776e65"),
@@ -402,15 +419,18 @@ class Game2048GridTile (GG.GridTile):
         _x1, _y1 = self.cell_size.xy_left_top(row, column)
         self.owner.move(self.tag, (_x1 - _x0), (_y1 - _y0))
         self.row, self.column = row, column
+
     # end def
 
     def animate_tile_popup(self, value):
         _x0, _y0 = self.xy_center
         self.owner.scale(self.id, _x0, _y0, value, value)
+
     # end def
 
     def animate_remove(self):
         self.owner.delete(self.tag)
+
     # end def
 
     def animate_show(self):
@@ -428,18 +448,22 @@ class Game2048GridTile (GG.GridTile):
             fill=_fg, font=_font, tags=(self.tag, "values"),
         )
         _anim_tile = GG.GridAnimation()
-        _anim_tile.register(self.animate_tile_popup)
+        if not self.train:
+            _anim_tile.register(self.animate_tile_popup)
         _anim_tile.start(
             interval=50, sequence=(6.0 / 5.0, 6.0 / 5.0, 5.0 / 6.0, 5.0 / 6.0),
         )
+
     # end def
 
     def get_value_colors(self):
         return self.COLORS.get(self.value, ("red", "yellow"))
+
     # end def
 
     def get_value_font(self):
         return self.FONTS.get(self.value, "sans 10 bold")
+
     # end def
 
     def update_display(self, tk_event=None, *args, **kw):
@@ -452,6 +476,6 @@ class Game2048GridTile (GG.GridTile):
             font=self.get_value_font(),
             fill=_fg,
         )
-    # end def
+        # end def
 
 # end class

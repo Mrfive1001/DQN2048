@@ -50,15 +50,11 @@ class GabrieleCirulli2048(tk.Tk):
 
     def __init__(self, **kw):
         tk.Tk.__init__(self)
-        self.initialize(**kw)
+        self.train = kw.get("train", 0)
         self.ai_time = 100
         self.train = 1
-        # self.nn = NeuralNetwork(
-        #     16, 16, 4)
-        # self.nn.inspect()
-        # self.nnoutput = np.zeros(4)
+        self.initialize(**kw)
 
-    # end def
 
     def center_window(self, tk_event=None, *args, **kw):
         self.update_idletasks()
@@ -112,7 +108,6 @@ class GabrieleCirulli2048(tk.Tk):
             self.after(
                 100 * random.randrange(3, 7), self.grid.pop_tile
             )
-        # end if
         self.bind_all("<Key>", self.on_keypressed)
 
     # end def
@@ -128,6 +123,10 @@ class GabrieleCirulli2048(tk.Tk):
     def run(self, **kw):
         if self.train:
             self.ai_train()
+            self.center_window()
+            self.deiconify()
+            self.new_game(**kw)
+            self.mainloop()
         else:
             self.center_window()
             self.deiconify()
@@ -339,8 +338,8 @@ class GabrieleCirulli2048(tk.Tk):
             self.ai_pressed()
             print(i + 1, '循环次数：', self.playloops)
         print("训练结束")
+        self.train = 0
 
 
 if __name__ == "__main__":
-    GabrieleCirulli2048().run()
-# end if
+    GabrieleCirulli2048(train=1).run()
