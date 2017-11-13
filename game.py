@@ -44,13 +44,11 @@ from src import game2048_grid as GG
 
 
 class GabrieleCirulli2048(tk.Tk):
-    PADDING = 10
-    START_TILES = 2
+    PADDING = 10  # 控制界面的
+    START_TILES = 2  # 初始化几个方格
 
     def __init__(self, **kw):
         tk.Tk.__init__(self)
-        for k, v in kw:
-            print("Key = {}, value = {}".format(k, v))
         self.initialize(**kw)
         self.ai_time = 100
         self.train = 0
@@ -74,16 +72,16 @@ class GabrieleCirulli2048(tk.Tk):
     # end def
 
     def initialize(self, **kw):
-        self.title("2048")
-        self.protocol("WM_DELETE_WINDOW", self.quit_app)
-        self.resizable(width=False, height=False)
+        self.title("2048")  # 标题
+        self.protocol("WM_DELETE_WINDOW", self.quit_app)  # 退出协议
+        self.resizable(width=False, height=False)  # 设置不可调
         self.withdraw()
-        ttk.Style().configure(".", font="sans 10")
+        ttk.Style().configure(".", font="sans 10")  # 样式
         _pad = self.PADDING
-        self.grid = GG.Game2048Grid(self, **kw)
         self.hint = ttk.Label(
             self, text="Hint: use keyboard arrows to move tiles."
         )
+        self.grid = GG.Game2048Grid(self, **kw)   # 窗格
         self.score = GS.Game2048Score(self, **kw)
         self.hiscore = GS.Game2048Score(self, label="Highest:", **kw)
         self.grid.pack(side=tk.TOP, padx=_pad, pady=_pad)
@@ -233,7 +231,7 @@ class GabrieleCirulli2048(tk.Tk):
             pass
         if self.playloops == 1 and self.train:
             end = time.clock()
-            print("时间：", (end - start)*100, 's')
+            print("时间：", (end - start) * 100, 's')
         if self.grid.no_more_hints():  # game over
             # self.ai_new_game()  # play ai again
             pass
@@ -325,7 +323,7 @@ class GabrieleCirulli2048(tk.Tk):
     #         print("其他，随机右，下")
     #     return move
 
-    def ai_train(self, epi=300):
+    def ai_train(self, epi=1):
         self.train = 1
         self.unbind_all("<Key>")
         for i in range(epi):

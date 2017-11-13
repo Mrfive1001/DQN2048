@@ -48,6 +48,7 @@ class Game2048Grid (GG.GameGrid):
     )
 
     def animate_rectangle(self, item_id, value):
+        # 动画图像
         self.tag_raise(item_id, tk.ALL)
         self.itemconfigure(item_id, stipple=value)
     # end def
@@ -77,6 +78,7 @@ class Game2048Grid (GG.GameGrid):
     # end def
 
     def fuse_tiles(self, into_tile, void_tile):
+        # 块和块之间的融合 加在一起，例如2+2
         _into, _void = into_tile, void_tile
         if _into and _void and (_into.value == _void.value):
             _into.value += _void.value
@@ -91,6 +93,7 @@ class Game2048Grid (GG.GameGrid):
     # end def
 
     def game_over(self, tk_event=None, *args, **kw):
+        # 游戏结束
         self.unbind_all("<Key>")
         _grid_width = self.winfo_reqwidth()
         _grid_height = self.winfo_reqheight()
@@ -135,18 +138,19 @@ class Game2048Grid (GG.GameGrid):
     # end def
 
     def get_available_box(self):
+        # 看那个地方还有空的
         if self.is_full():
             raise GG.GridError("no more room in grid")
         else:
             _at = self.matrix.get_object_at
-            while True:
-                _row = random.randrange(self.rows)
-                _column = random.randrange(self.columns)
-                if not _at(_row, _column):
-                    break
+            stor = []
+            for _row in range(self.rows):
+                for _column in range(self.columns):
+                    if not _at(_row, _column):
+                        stor.append((_row, _column))
                 # end if
             # end while
-            return (_row, _column)
+            return random.choice(stor)
         # end if - no more room
     # end def
 
@@ -163,6 +167,7 @@ class Game2048Grid (GG.GameGrid):
     # end def
 
     def move_tiles_down(self):
+        # 整体下移
         _at = self.matrix.get_object_at
         _acted = False
         for _column in range(self.columns):
@@ -292,7 +297,7 @@ class Game2048Grid (GG.GameGrid):
 
     def next_tile(self, tk_event=None, *args, **kw):
         if kw.get("acted"):
-            self.pop_tile()
+            self.pop_tile() # 加入一个
         # end if
         if self.no_more_hints():
             self.game_over()
@@ -323,10 +328,10 @@ class Game2048Grid (GG.GameGrid):
         if not self.is_full():
             _value = random.choice([2, 4, 2, 2])
             _row, _column = self.get_available_box()
-            _tile = Game2048GridTile(self, _value, _row, _column)
+            _tile = Game2048GridTile(self, _value, _row, _column)  # 定义一块砖
             _tile.animate_show()
             self.register_tile(_tile.id, _tile)
-            self.matrix.add(_tile, *_tile.row_column, raise_error=True)
+            self.matrix.add(_tile, *_tile.row_column, raise_error=True) # 加入到Matrix
         # end if - room in grid
     # end def
 
@@ -345,6 +350,7 @@ class Game2048Grid (GG.GameGrid):
     # end def
 
     def update_score(self, value, mode="add"):
+        # 更新分数的值
         if callable(self.__score_callback):
             self.__score_callback(value, mode)
         # end if
@@ -437,6 +443,7 @@ class Game2048GridTile (GG.GridTile):
     # end def
 
     def update_display(self, tk_event=None, *args, **kw):
+        # 更新分数的显示
         _bg, _fg = self.get_value_colors()
         self.owner.itemconfigure(self.id, fill=_bg)
         self.owner.itemconfigure(

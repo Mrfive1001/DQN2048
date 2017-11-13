@@ -54,14 +54,14 @@ class GameGrid (tk.Canvas):
         self.CONFIG = self.CONFIG.copy()
         self.CONFIG.update(kw)
         self.configure(**self._only_tk(self.CONFIG))
-        self.rows = kw.get("rows", self.ROWS)
+        self.rows = kw.get("rows", self.ROWS)  # 行
         self.columns = kw.get("columns", self.COLUMNS)
         self.thickness = kw.get("thickness", self.THICKNESS)
         self.bgcolor = kw.get("bgcolor", self.BGCOLOR)
         self.fgcolor = kw.get("fgcolor", self.FGCOLOR)
         self.__tk_owner = master
         self.__tiles = dict()
-        self.__matrix = GridMatrix(self.rows, self.columns)
+        self.__matrix = GridMatrix(self.rows, self.columns) # 几行几列的矩阵
         self.__cell_size = GridCellSize(self)
         self.init_widget(**self.CONFIG)
     # end def
@@ -466,6 +466,7 @@ class GridMatrix:
     # end def
 
     def add(self, object_, row, column, raise_error=False):
+        # 将某一个值置为object_
         if self.matrix.get((row, column)) is None:
             self.matrix[(row, column)] = object_
             return True
@@ -500,6 +501,7 @@ class GridMatrix:
     # end def
 
     def get_object_at(self, row, column, raise_error=False):
+        # 从矩阵中得到某个位置的量
         _object = self.matrix.get((row, column))
         if raise_error and _object is None:
             raise GridError(
@@ -517,16 +519,19 @@ class GridMatrix:
     # end def
 
     def move_object(self, from_row_column, to_row_column):
+        # 从一个位置移动到另外一个覆盖掉
         _object = self.get_object_at(*from_row_column, raise_error=True)
         self.add(_object, *to_row_column, raise_error=True)
         self.remove_object_at(*from_row_column)
     # end def
 
     def remove_object_at(self, row, column):
+        # 删除某个位置的值
         self.matrix.pop((row, column), None)
     # end def
 
     def reset_matrix(self):
+        # 重置
         self.__matrix = dict()
     # end def
 
