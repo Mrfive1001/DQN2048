@@ -52,6 +52,7 @@ class GabrieleCirulli2048(tk.Tk):
             print("Key = {}, value = {}".format(k, v))
         self.initialize(**kw)
         self.ai_time = 100
+        self.train = 0
         # self.nn = NeuralNetwork(
         #     16, 16, 4)
         # self.nn.inspect()
@@ -125,6 +126,7 @@ class GabrieleCirulli2048(tk.Tk):
     # end def
 
     def run(self, **kw):
+        self.ai_train()
         self.center_window()
         self.deiconify()
         self.new_game(**kw)
@@ -133,7 +135,7 @@ class GabrieleCirulli2048(tk.Tk):
     # end def
 
     def on_keypressed(self, tk_event=None, *args, **kw):
-
+        # old = self.score.get_score()
         _event_handler = {
             "left": self.grid.move_tiles_left,
             "right": self.grid.move_tiles_right,
@@ -153,7 +155,8 @@ class GabrieleCirulli2048(tk.Tk):
             print("Tile id = {}, tile row = {}, tile column = {}, value = {}".
                   format(t, tiles[t].row, tiles[t].column, tiles[t].value))
         print("--------------------------")
-        # print(self.score.get_score()) # 读取分数
+        # new = self.score.get_score() # 读取总分数
+        # print(new - old)
         # end try
 
     # end def
@@ -186,8 +189,9 @@ class GabrieleCirulli2048(tk.Tk):
     # 定义一个AI程序，按了界面上的ai运行按钮后会定时触发
     # 在这个子程序里面运行一次AI操作
     def ai_pressed(self, tk_event=None, *args, **kw):
-        self.playloops = self.playloops + 1
-        matrix = self.grid.matrix.matrix
+        if not self.train:
+            self.playloops = self.playloops + 1
+            matrix = self.grid.matrix.matrix
         # get the values of cells
         mat2048 = np.zeros((4, 4))
         tiles = self.grid.tiles
@@ -208,16 +212,20 @@ class GabrieleCirulli2048(tk.Tk):
         pressed = self.ai_move(mat2048)  # this is random control
 
         if pressed == 1:
-            print("Move left\n")
+            if not self.train:
+                print("Move left\n")
             self.grid.move_tiles_left()
         elif pressed == 2:
-            print("Move right\n")
+            if not self.train:
+                print("Move right\n")
             self.grid.move_tiles_right()
         elif pressed == 3:
-            print("Move up\n")
+            if not self.train:
+                print("Move up\n")
             self.grid.move_tiles_up()
         elif pressed == 4:
-            print("Move down\n")
+            if not self.train:
+                print("Move down\n")
             self.grid.move_tiles_down()
         else:
             pass
@@ -226,7 +234,10 @@ class GabrieleCirulli2048(tk.Tk):
             # self.ai_new_game()  # play ai again
             pass
         else:
-            self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
+            if not self.train:
+                self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
+            else:
+                self.ai_pressed()
 
     # 修改这个子程序
     def ai_move(self, mat2048):
@@ -309,6 +320,20 @@ class GabrieleCirulli2048(tk.Tk):
     #         move = random.choice((1, 3))
     #         print("其他，随机右，下")
     #     return move
+
+    def ai_train(self, epi=10000):
+        self.train = 1
+        self.unbind_all("<Key>")
+        for i in range(epi):
+            print(i)
+            self.score.reset_score()
+            self.grid.reset_grid()
+            for n in range(self.START_TILES):
+                self.grid.pop_tile()
+            # self.playloops = 0
+            self.ai_pressed()
+        self.train = 0
+
 
 if __name__ == "__main__":
     GabrieleCirulli2048().run()
