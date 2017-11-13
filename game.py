@@ -55,7 +55,6 @@ class GabrieleCirulli2048(tk.Tk):
         self.train = 1
         self.initialize(**kw)
 
-
     def center_window(self, tk_event=None, *args, **kw):
         self.update_idletasks()
         _width = self.winfo_reqwidth()
@@ -65,8 +64,6 @@ class GabrieleCirulli2048(tk.Tk):
         _left = (_screen_width - _width) // 2
         _top = (_screen_height - _height) // 2
         self.geometry("+{x}+{y}".format(x=_left, y=_top))
-
-    # end def
 
     def initialize(self, **kw):
         self.title("2048")  # 标题
@@ -98,8 +95,6 @@ class GabrieleCirulli2048(tk.Tk):
 
         # define your AI variable here
 
-    # end def
-
     def new_game(self, *args, **kw):
         self.unbind_all("<Key>")
         self.score.reset_score()
@@ -110,30 +105,19 @@ class GabrieleCirulli2048(tk.Tk):
             )
         self.bind_all("<Key>", self.on_keypressed)
 
-    # end def
-
     def quit_app(self, **kw):
         if messagebox.askokcancel("Question", "Quit game?"):
             self.quit()
             self.destroy()
-            # end if
-
-    # end def
 
     def run(self, **kw):
         if self.train:
             self.ai_train()
-            self.center_window()
-            self.deiconify()
-            self.new_game(**kw)
-            self.mainloop()
         else:
             self.center_window()
             self.deiconify()
             self.new_game(**kw)
             self.mainloop()
-
-    # end def
 
     def on_keypressed(self, tk_event=None, *args, **kw):
         # old = self.score.get_score()
@@ -160,17 +144,13 @@ class GabrieleCirulli2048(tk.Tk):
         # print(new - old)
         # end try
 
-    # end def
-
     def update_score(self, value, mode="add"):
         if str(mode).lower() in ("add", "inc", "+"):
             self.score.add_score(value)
         else:
             self.score.set_score(value)
-        # end if
-        self.hiscore.high_score(self.score.get_score())
 
-    # end def
+        self.hiscore.high_score(self.score.get_score())
 
     def ai_new_game(self, *args, **kw):
         self.unbind_all("<Key>")
@@ -180,12 +160,10 @@ class GabrieleCirulli2048(tk.Tk):
             self.after(
                 10 * random.randrange(3, 7), self.grid.pop_tile
             )
-        # end if
+
         self.playloops = 0
         self.after(self.ai_time, self.ai_pressed)  # 多长时间后调用下一次ai_pressed
         self.bind_all("<Key>", self.on_keypressed)
-
-    # end def
 
     # 定义一个AI程序，按了界面上的ai运行按钮后会定时触发
     # 在这个子程序里面运行一次AI操作
@@ -248,83 +226,6 @@ class GabrieleCirulli2048(tk.Tk):
         # 输入是2048表格的2对数，输出1~4，表示上下左右
         return random.randint(1, 4)
 
-    # def ai_move(self, mat2048):
-    #     # mat2048 是4X4的矩阵，放着的是棋盘的数据
-    #     move = 0
-    #     imax = mat2048.argmax()
-    #     imaxrow = int(imax / 4)
-    #     imaxcol = imax - imaxrow * 4
-    #
-    #     eq_col = np.zeros(4)  # 获得是否列中存在合并的数，如果没有，这一列就等于0
-    #
-    #     for i in range(4):
-    #         st = []
-    #         for j in range(4):  # 判断两个相邻不等于0的数是否相等，相等表示何以和
-    #             if len(st) == 0:
-    #                 if mat2048[j, i] > 0:
-    #                     st.append(mat2048[j, i])
-    #                 else:
-    #                     pass
-    #             else:
-    #                 if mat2048[j, i] > 0:
-    #                     if st.pop() == mat2048[j, i]:
-    #                         eq_col[i] += mat2048[j, i]
-    #                     else:
-    #                         st.append(mat2048[j, i])
-    #                 else:
-    #                     pass
-    #                     # print(st)
-    #     print(eq_col)
-    #
-    #     eq_row = np.zeros(4)  # 获得是否行中存在合并的数，如果没有，这一行就等于0
-    #     for i in range(4):
-    #         st = []
-    #         for j in range(4):
-    #             if len(st) == 0:
-    #                 if mat2048[i, j] > 0:
-    #                     st.append(mat2048[i, j])
-    #                 else:
-    #                     pass
-    #             else:
-    #                 if mat2048[i, j] > 0:
-    #                     if st.pop() == mat2048[i, j]:
-    #                         eq_row[i] += mat2048[i, j]
-    #                     else:
-    #                         st.append(mat2048[i, j])
-    #                 else:
-    #                     pass
-    #                     # print(st)
-    #     print(eq_row)
-    #
-    #     if imaxrow < 3 and mat2048[(imaxrow + 1):4, imaxcol].sum() == 0:
-    #         move = 4  # 最大数不在最底下，同时最大数下面为空，下移
-    #         print("最大数不在最底下，同时最大数下面为空，下移")
-    #     elif imaxcol < 3 and mat2048[imaxrow, (imaxcol + 1):4].sum() == 0:
-    #         move = 2  # 最大数不在最右边，同时最大数右边为空，右移
-    #         print("最大数不在最右边，同时最大数右边为空，右移")
-    #     elif eq_col.sum() >= eq_row.sum() and eq_col.sum() > 0:
-    #         move = 4  # 如果向下合并可以合并更多,向下
-    #         print("如果向下合并可以合并更多,向下")
-    #     elif eq_row.sum() > eq_col.sum() and eq_row.sum() > 0:
-    #         move = 2  # 如果向右可以合并更多,向右
-    #         print("如果向右可以合并更多,向右")
-    #     elif sum(mat2048[imaxrow, :]) > sum(mat2048[:, imaxcol]):
-    #         # 向右，向下都没有合并的情况
-    #         # 判断最大数那一行和列哪个数更多
-    #         # 如果行更多，就向左，尽可能保证最大数不动
-    #         move = random.choice((1, 2))
-    #         print("向右，向下都没有，最大数所在行的数比较多，向左右随机")
-    #     elif sum(mat2048[imaxrow, :]) < sum(mat2048[:, imaxcol]):
-    #         # 向右，向下都没有合并的情况
-    #         # 判断最大数那一行和列哪个数更多
-    #         # 如果列更多，就向上，尽可能保证最大数不动
-    #         move = random.choice((3, 4))
-    #         print("向右，向下都没有，最大数所在列的数比较多，向上下随机")
-    #     else:
-    #         move = random.choice((1, 3))
-    #         print("其他，随机右，下")
-    #     return move
-
     def ai_train(self, epi=1000):
         for i in range(epi):
             self.playloops = 0
@@ -334,7 +235,7 @@ class GabrieleCirulli2048(tk.Tk):
             self.score.reset_score()
             self.grid.clear_all()
             for n in range(self.START_TILES):
-                self.grid.pop_tile() #对象加1
+                self.grid.pop_tile()  # 对象加1
             self.ai_pressed()
             print(i + 1, '循环次数：', self.playloops)
         print("训练结束")
