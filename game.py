@@ -121,7 +121,6 @@ class GabrieleCirulli2048(tk.Tk):
             self.destroy()
 
     def on_keypressed(self, tk_event=None, *args, **kw):
-        # old = self.score.get_score()
         _event_handler = {
             "left": self.grid.move_tiles_left,
             "right": self.grid.move_tiles_right,
@@ -141,8 +140,6 @@ class GabrieleCirulli2048(tk.Tk):
             print("Tile id = {}, tile row = {}, tile column = {}, value = {}".
                   format(t, tiles[t].row, tiles[t].column, tiles[t].value))
         print("--------------------------")
-        # new = self.score.get_score() # 读取总分数
-        # print(new - old)
         # end try
 
     def update_score(self, value, mode="add"):
@@ -161,50 +158,32 @@ class GabrieleCirulli2048(tk.Tk):
             self.after(
                 10 * random.randrange(3, 7), self.grid.pop_tile
             )
-
         self.playloops = 0
         self.after(self.ai_time, self.ai_pressed)  # 多长时间后调用下一次ai_pressed
         self.bind_all("<Key>", self.on_keypressed)
 
     # 定义一个AI程序，按了界面上的ai运行按钮后会定时触发
     # 在这个子程序里面运行一次AI操作
+    # 不需要训练的在界面显示的ai展示
     def ai_pressed(self, tk_event=None, *args, **kw):
-        if not self.train:
-            matrix = self.grid.matrix.matrix
-        # get the values of cells
+        matrix = self.grid.matrix.matrix
         self.playloops = self.playloops + 1
         mat2048 = np.zeros((4, 4))
         tiles = self.grid.tiles
         for t in tiles:
-            # put values into a matrix
             mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
-            # print("Tile id = {}, tile row = {}, tile column = {}, value = {}".
-            #       format(t, tiles[t].row, tiles[t].column, tiles[t].value))
-        # print(mat2048)
-        # print("--------------------------")
-        # add your AI program here to control the game
-        # the control input is a number from 1-4
-        # 1 move to left
-        # 2 move to right
-        # 3 move to up
-        # 4 move to down
-        # pressed = int(random.choice((1, 2, 3, 4)))
         pressed = self.ai_move(mat2048)  # this is random control
         if pressed == 1:
-            if not self.train:
-                print("Move left\n")
+            print("Move left\n")
             self.grid.move_tiles_left()
         elif pressed == 2:
-            if not self.train:
-                print("Move right\n")
+            print("Move right\n")
             self.grid.move_tiles_right()
         elif pressed == 3:
-            if not self.train:
-                print("Move up\n")
+            print("Move up\n")
             self.grid.move_tiles_up()
         elif pressed == 4:
-            if not self.train:
-                print("Move down\n")
+            print("Move down\n")
             self.grid.move_tiles_down()
         else:
             pass
@@ -212,10 +191,7 @@ class GabrieleCirulli2048(tk.Tk):
             # self.ai_new_game()  # play ai again
             pass
         else:
-            if not self.train:
-                self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
-            else:
-                self.ai_pressed()
+            self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
     # 修改这个子程序
     def ai_move(self, mat2048):
@@ -228,15 +204,39 @@ class GabrieleCirulli2048(tk.Tk):
             self.tile_state[stemp] = 1
         return random.randint(1, 4)
 
-    def ai_train(self, epi=20000):
+    def ai_transfer(self):
+        # 可以返回状态、动作和奖励
+        self.playloops = self.playloops + 1
+        mat2048 = np.zeros((4, 4))
+        tiles = self.grid.tiles
+        for t in tiles:
+            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
+        # 2048表格的2对数
+        old = self.score.get_score()
+        pressed = self.ai_move(mat2048)  # this is random control
+        if pressed == 1:
+            self.grid.move_tiles_left()
+        elif pressed == 2:
+            self.grid.move_tiles_right()
+        elif pressed == 3:
+            self.grid.move_tiles_up()
+        elif pressed == 4:
+            self.grid.move_tiles_down()
+        else:
+            pass
+        new = self.score.get_score()  # 读取总分数
+        print(new - old)
+
+    def ai_train(self, epi=1):
         for i in range(epi):
             self.playloops = 0
             self.score.reset_score()
             self.grid.clear_all()
             for n in range(self.START_TILES):
                 self.grid.pop_tile()  # 对象加1
-            self.ai_pressed()
-            print(i + 1, '循环次数：', self.playloops)
+            while not self.grid.no_more_hints():  # game over
+                self.ai_transfer()
+            # print(i + 1, '循环次数：', self.playloops)
         print("训练结束")
         print("有", len(self.tile_state.keys()), "个状态")
         self.train = 0
