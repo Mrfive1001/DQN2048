@@ -53,7 +53,17 @@ class GabrieleCirulli2048(tk.Tk):
         self.train = kw.get("train", 0)
         self.ai_time = 100
         self.train = 1
+        self.tile_state = dict()
         self.initialize(**kw)
+
+    def run(self, **kw):
+        if self.train:
+            self.ai_train()
+        else:
+            self.center_window()
+            self.deiconify()
+            self.new_game(**kw)
+            self.mainloop()
 
     def center_window(self, tk_event=None, *args, **kw):
         self.update_idletasks()
@@ -109,15 +119,6 @@ class GabrieleCirulli2048(tk.Tk):
         if messagebox.askokcancel("Question", "Quit game?"):
             self.quit()
             self.destroy()
-
-    def run(self, **kw):
-        if self.train:
-            self.ai_train()
-        else:
-            self.center_window()
-            self.deiconify()
-            self.new_game(**kw)
-            self.mainloop()
 
     def on_keypressed(self, tk_event=None, *args, **kw):
         # old = self.score.get_score()
@@ -189,8 +190,6 @@ class GabrieleCirulli2048(tk.Tk):
         # 4 move to down
         # pressed = int(random.choice((1, 2, 3, 4)))
         pressed = self.ai_move(mat2048)  # this is random control
-        if self.playloops == 1 and self.train:
-            start = time.clock()
         if pressed == 1:
             if not self.train:
                 print("Move left\n")
@@ -209,9 +208,6 @@ class GabrieleCirulli2048(tk.Tk):
             self.grid.move_tiles_down()
         else:
             pass
-        if self.playloops == 1 and self.train:
-            end = time.clock()
-            print("时间：", (end - start) * 100, 's')
         if self.grid.no_more_hints():  # game over
             # self.ai_new_game()  # play ai again
             pass
@@ -224,14 +220,17 @@ class GabrieleCirulli2048(tk.Tk):
     # 修改这个子程序
     def ai_move(self, mat2048):
         # 输入是2048表格的2对数，输出1~4，表示上下左右
+        stemp = ''
+        for s1 in mat2048:
+            for s2 in s1:
+                stemp += str(int(s2))
+        if stemp not in self.tile_state:
+            self.tile_state[stemp] = 1
         return random.randint(1, 4)
 
-    def ai_train(self, epi=1000):
+    def ai_train(self, epi=20000):
         for i in range(epi):
             self.playloops = 0
-            if i == 5:
-                print("woshiyixia")
-                pass
             self.score.reset_score()
             self.grid.clear_all()
             for n in range(self.START_TILES):
@@ -239,6 +238,7 @@ class GabrieleCirulli2048(tk.Tk):
             self.ai_pressed()
             print(i + 1, '循环次数：', self.playloops)
         print("训练结束")
+        print("有", len(self.tile_state.keys()), "个状态")
         self.train = 0
 
 
