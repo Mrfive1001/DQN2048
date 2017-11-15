@@ -51,14 +51,21 @@ class GabrieleCirulli2048(tk.Tk):
     def __init__(self, **kw):
         tk.Tk.__init__(self)
         self.train = kw.get("train", 0)
+        self.playloops = 0
+
         self.ai_time = 100
-        self.train = 1
-        self.tile_state = dict()
+        self.memory = dict()
+        self.memory_counter = 0
+        self.gamma = 0.2
+        self.episi = 0.2
+        self.old_state_action = []
+
         self.initialize(**kw)
 
     def run(self, **kw):
         if self.train:
-            self.ai_train()
+            # self.ai_train()
+            self.save_memory()
         else:
             self.center_window()
             self.deiconify()
@@ -193,15 +200,30 @@ class GabrieleCirulli2048(tk.Tk):
         else:
             self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
+    def save_memory(self, memo_size=5000):
+        self.memory = dict()
+        while self.memory_counter <= memo_size:
+            self.playloops = 0
+            self.score.reset_score()
+            self.grid.clear_all()
+            for n in range(self.START_TILES):
+                self.grid.pop_tile()  # 对象加1
+            while not self.grid.no_more_hints():  # game over
+                mat_sta, action, reward = self.ai_transfer()
+                if str(mat_sta) not in self.memory:
+                    self.memory_counter += 1
+                    self.memory[str(mat_sta)] = (mat_sta, np.array([0, 0, 0, 0]))
+                if self.playloops == 1:
+                    self.old_state_action = [mat_sta, action, reward]
+                else:
+                    self.memory[str(self.old_state_action[0])][1][self.old_state_action[1] - 1] = \
+                        self.old_state_action[2] + self.gamma * self.memory[str(mat_sta)][1][action-1]
+                    self.old_state_action = [mat_sta, action, reward]
+        print(self.memory_counter)
+
     # 修改这个子程序
     def ai_move(self, mat2048):
-        # 输入是2048表格的2对数，输出1~4，表示上下左右
-        stemp = ''
-        for s1 in mat2048:
-            for s2 in s1:
-                stemp += str(int(s2))
-        if stemp not in self.tile_state:
-            self.tile_state[stemp] = 1
+        # 输入是2048表格的2对数，输出1~4，表示上下左右 np.array((2,2))
         return random.randint(1, 4)
 
     def ai_transfer(self):
@@ -225,21 +247,21 @@ class GabrieleCirulli2048(tk.Tk):
         else:
             pass
         new = self.score.get_score()  # 读取总分数
-        print(new - old)
+        return mat2048, pressed, new - old
 
-    def ai_train(self, epi=1):
-        for i in range(epi):
-            self.playloops = 0
-            self.score.reset_score()
-            self.grid.clear_all()
-            for n in range(self.START_TILES):
-                self.grid.pop_tile()  # 对象加1
-            while not self.grid.no_more_hints():  # game over
-                self.ai_transfer()
-            # print(i + 1, '循环次数：', self.playloops)
-        print("训练结束")
-        print("有", len(self.tile_state.keys()), "个状态")
-        self.train = 0
+        # def ai_train(self, epi=1):
+        #     for i in range(epi):
+        #         self.playloops = 0
+        #         self.score.reset_score()
+        #         self.grid.clear_all()
+        #         for n in range(self.START_TILES):
+        #             self.grid.pop_tile()  # 对象加1
+        #         while not self.grid.no_more_hints():  # game over
+        #             self.ai_transfer()
+        #             print(i + 1, '循环次数：', self.playloops)
+        #     print("训练结束")
+        #     print("有", len(self.tile_state.keys()), "个状态")
+        #     self.train = 0
 
 
 if __name__ == "__main__":
