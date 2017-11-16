@@ -58,7 +58,7 @@ class GabrieleCirulli2048(tk.Tk):
         self.playloops = 0
 
         self.ai_time = 100
-        self.memory = dict()
+        self.memory = []
         self.memory_counter = 0
         self.gamma = 0.2
         self.episi = 0.2
@@ -211,7 +211,7 @@ class GabrieleCirulli2048(tk.Tk):
             self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
     def save_memory(self, memo_size=500):
-        self.memory = dict()
+        self.memory = []
         while self.memory_counter <= memo_size:
             self.playloops = 0
             self.score.reset_score()
@@ -220,15 +220,14 @@ class GabrieleCirulli2048(tk.Tk):
                 self.grid.pop_tile()  # 对象加1
             while not self.grid.no_more_hints():  # game over
                 mat_sta, action, reward = self.ai_transfer()
-                if str(mat_sta) not in self.memory:
-                    self.memory_counter += 1
-                    print("已收集", self.memory_counter, "条数据进记忆池")
-                    self.memory[str(mat_sta)] = (mat_sta, np.array([0, 0, 0, 0]))
+                self.memory_counter += 1
+                print("已收集", self.memory_counter, "条数据进记忆池")
+                self.memory.append((mat_sta, np.array([0, 0, 0, 0])))
                 if self.playloops == 1:
                     self.old_state_action = [mat_sta, action, reward]
                 else:
-                    self.memory[str(self.old_state_action[0])][1][self.old_state_action[1] - 1] = \
-                        self.old_state_action[2] + self.gamma * self.memory[str(mat_sta)][1][action - 1]
+                    self.memory[-2][1][self.old_state_action[1] - 1] = \
+                        self.old_state_action[2] + self.gamma * self.memory[-1][1][action - 1]
                     # q = r + gamma*q'
                     self.old_state_action = [mat_sta, action, reward]
         self.memory_size = self.memory_counter
@@ -236,21 +235,21 @@ class GabrieleCirulli2048(tk.Tk):
 
     def add_memory(self, mar):
         # mar = (mstate,action,reward)
-        if str(mar[0]) not in self.memory:
-            self.memory.popitem()
-            # self.memory_counter += 1
+        self.memory.pop(random.randint(0,self.memory_size))
         if self.playloops == 1:
             self.old_state_action = mar
-            self.memory[str(mar[0])] = (mar[0], np.array([0, 0, 0, 0]))
+            self.memory.append((mar[0], np.array([0, 0, 0, 0])))
         else:
-            newq = self.model.predict(mar[0].reshape((1, -1))).max()
-            self.memory[str(self.old_state_action[0])][1][self.old_state_action[1] - 1] \
-                = self.old_state_action[2] + newq
+            newq = self.model.predict(mar[0].reshape((1, -1))).reshape((-1,1))
+            self.memory[-1][1][self.old_state_action[1] - 1] \
+                = self.old_state_action[2] + newq.max()
             # q = r + gamma * q'
+            self.old_state_action = mar
+            self.memory.append((mar[0], newq))
 
     def nn_mermory(self):
         x_train, y_train = [], []
-        for value in self.memory.values():
+        for value in self.memory:
             x_train.append(value[0])
             y_train.append(value[1])
         x_train = np.array(x_train)
