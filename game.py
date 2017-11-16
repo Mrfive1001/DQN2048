@@ -29,6 +29,10 @@ import copy
 import numpy as np
 import time
 import pickle
+from keras.models import Sequential
+from keras.layers.core import Dense, Activation
+from keras.optimizers import SGD
+from keras.datasets import mnist
 
 try:
     import tkinter as tk
@@ -59,13 +63,14 @@ class GabrieleCirulli2048(tk.Tk):
         self.gamma = 0.2
         self.episi = 0.2
         self.old_state_action = []
+        self.memory_size = 0
 
         self.initialize(**kw)
 
     def run(self, **kw):
         if self.train:
-            # self.ai_train()
-            self.save_memory()
+            self.ai_train()
+            # self.save_memory()
         else:
             self.center_window()
             self.deiconify()
@@ -212,18 +217,38 @@ class GabrieleCirulli2048(tk.Tk):
                 mat_sta, action, reward = self.ai_transfer()
                 if str(mat_sta) not in self.memory:
                     self.memory_counter += 1
+                    print("已收集", self.memory_counter, "条数据进记忆池")
                     self.memory[str(mat_sta)] = (mat_sta, np.array([0, 0, 0, 0]))
                 if self.playloops == 1:
                     self.old_state_action = [mat_sta, action, reward]
                 else:
                     self.memory[str(self.old_state_action[0])][1][self.old_state_action[1] - 1] = \
-                        self.old_state_action[2] + self.gamma * self.memory[str(mat_sta)][1][action-1]
+                        self.old_state_action[2] + self.gamma * self.memory[str(mat_sta)][1][action - 1]
                     self.old_state_action = [mat_sta, action, reward]
-        print(self.memory_counter)
+        self.memory_size = self.memory_counter
+        print("记忆池添加结束！")
+
+    def add_memory(self, mar):
+        # mar = (mstate,action,reward)
+        if str(mar[1]) not in self.memory:
+            pass
+            # self.memory_counter += 1
+            # print("已收集", self.memory_counter, "条数据进记忆池")
+            # self.memory[str(mat_sta)] = (mat_sta, np.array([0, 0, 0, 0]))
+
+        else:
+            self.memory.popitem()
+
+    def nn_mermory(self):
+        # model = Sequential()
+        #
+        # model.add(Dense(input_dim=16, output_dim=500, activation='relu'))
+        # model.add(Dense(output_dim=500, activation='relu'))
+        pass
 
     # 修改这个子程序
     def ai_move(self, mat2048):
-        # 输入是2048表格的2对数，输出1~4，表示上下左右 np.array((2,2))
+        # 输入是2048表格的2对数，输出1~4，表示上下左右 np.array((16,1))
         return random.randint(1, 4)
 
     def ai_transfer(self):
@@ -234,6 +259,7 @@ class GabrieleCirulli2048(tk.Tk):
         for t in tiles:
             mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
         # 2048表格的2对数
+        mat2048 = mat2048.reshape((1, -1)).astype(int)
         old = self.score.get_score()
         pressed = self.ai_move(mat2048)  # this is random control
         if pressed == 1:
@@ -248,6 +274,18 @@ class GabrieleCirulli2048(tk.Tk):
             pass
         new = self.score.get_score()  # 读取总分数
         return mat2048, pressed, new - old
+
+    def ai_train(self):
+        self.save_memory()
+        self.nn_mermory()
+
+        self.playloops = 0
+        self.score.reset_score()
+        self.grid.clear_all()
+        for n in range(self.START_TILES):
+            self.grid.pop_tile()  # 对象加1
+        mar = self.ai_transfer()
+        self.add_memory(mar)
 
         # def ai_train(self, epi=1):
         #     for i in range(epi):
