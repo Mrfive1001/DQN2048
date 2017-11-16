@@ -56,6 +56,7 @@ class GabrieleCirulli2048(tk.Tk):
         tk.Tk.__init__(self)
         self.train = kw.get("train", 0)
         self.playloops = 0
+        self.ran = 1
 
         self.ai_time = 100
         self.memory = []
@@ -235,12 +236,12 @@ class GabrieleCirulli2048(tk.Tk):
 
     def add_memory(self, mar):
         # mar = (mstate,action,reward)
-        self.memory.pop(random.randint(0,self.memory_size))
+        self.memory.pop(random.randint(0, self.memory_size - 1))
         if self.playloops == 1:
             self.old_state_action = mar
             self.memory.append((mar[0], np.array([0, 0, 0, 0])))
         else:
-            newq = self.model.predict(mar[0].reshape((1, -1))).reshape((-1,1))
+            newq = self.model.predict(mar[0].reshape((1, -1))).reshape(4)
             self.memory[-1][1][self.old_state_action[1] - 1] \
                 = self.old_state_action[2] + newq.max()
             # q = r + gamma * q'
@@ -260,13 +261,24 @@ class GabrieleCirulli2048(tk.Tk):
         # self.model.fit(x_train[:200, :], y_train[:200, :], batch_size=10, initial_epoch=20, epochs=40)
         # initial_epoch继续之前的训练，等于之前的训练数目
 
-    def update_nn(self):
-        pass
+    def update_nn(self, size=100):
+        x_train, y_train = [], []
+        for i in np.random.choice(range(self.memory_size), size):
+            value = self.memory[i]
+            x_train.append(value[0])
+            y_train.append(value[1])
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
+        self.model.fit(x_train, y_train, initial_epoch=self.epoch, epochs=10)
+        self.epoch += 10
 
     # 修改这个子程序
     def ai_move(self, mat2048):
         # 输入是2048表格的2对数，输出1~4，表示上下左右 np.array((16,))
-        return random.randint(1, 4)
+        if self.ran:
+            return random.randint(1, 4)
+        else:
+            return np.argmax(self.model.predict(mat2048.reshape((1, -1))).reshape(4)) + 1
 
     def ai_transfer(self):
         # 可以返回状态、动作和奖励
@@ -295,6 +307,7 @@ class GabrieleCirulli2048(tk.Tk):
     def ai_train(self):
         self.save_memory()
         self.nn_mermory()
+        self.ran = 0
 
         self.playloops = 0
         self.score.reset_score()
@@ -304,21 +317,10 @@ class GabrieleCirulli2048(tk.Tk):
         while not self.grid.no_more_hints():  # game over
             mar = self.ai_transfer()
             self.add_memory(mar)
+            # print("第%d步" % self.playloops)
+            print("分数是%d"%self.score.get_score())
             if self.playloops % 10 == 0:
                 self.update_nn()
-                # def ai_train(self, epi=1):
-                #     for i in range(epi):
-                #         self.playloops = 0
-                #         self.score.reset_score()
-                #         self.grid.clear_all()
-                #         for n in range(self.START_TILES):
-                #             self.grid.pop_tile()  # 对象加1
-                #         while not self.grid.no_more_hints():  # game over
-                #             self.ai_transfer()
-                #             print(i + 1, '循环次数：', self.playloops)
-                #     print("训练结束")
-                #     print("有", len(self.tile_state.keys()), "个状态")
-                #     self.train = 0
 
 
 if __name__ == "__main__":
