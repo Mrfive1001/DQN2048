@@ -64,6 +64,11 @@ class GabrieleCirulli2048(tk.Tk):
         self.episi = 0.2
         self.old_state_action = []
         self.memory_size = 0
+        self.epoch = 0
+        self.model = Sequential()
+        self.model.add(Dense(input_dim=16, activation="relu", units=500))
+        self.model.add(Dense(units=500, activation='relu'))
+        self.model.add(Dense(units=4, activation='linear'))
 
         self.initialize(**kw)
 
@@ -205,7 +210,7 @@ class GabrieleCirulli2048(tk.Tk):
         else:
             self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
-    def save_memory(self, memo_size=5000):
+    def save_memory(self, memo_size=500):
         self.memory = dict()
         while self.memory_counter <= memo_size:
             self.playloops = 0
@@ -224,42 +229,55 @@ class GabrieleCirulli2048(tk.Tk):
                 else:
                     self.memory[str(self.old_state_action[0])][1][self.old_state_action[1] - 1] = \
                         self.old_state_action[2] + self.gamma * self.memory[str(mat_sta)][1][action - 1]
+                    # q = r + gamma*q'
                     self.old_state_action = [mat_sta, action, reward]
         self.memory_size = self.memory_counter
         print("记忆池添加结束！")
 
     def add_memory(self, mar):
         # mar = (mstate,action,reward)
-        if str(mar[1]) not in self.memory:
-            pass
-            # self.memory_counter += 1
-            # print("已收集", self.memory_counter, "条数据进记忆池")
-            # self.memory[str(mat_sta)] = (mat_sta, np.array([0, 0, 0, 0]))
-
-        else:
+        if str(mar[0]) not in self.memory:
             self.memory.popitem()
+            # self.memory_counter += 1
+        if self.playloops == 1:
+            self.old_state_action = mar
+            self.memory[str(mar[0])] = (mar[0], np.array([0, 0, 0, 0]))
+        else:
+            newq = self.model.predict(mar[0].reshape((1, -1))).max()
+            self.memory[str(self.old_state_action[0])][1][self.old_state_action[1] - 1] \
+                = self.old_state_action[2] + newq
+            # q = r + gamma * q'
 
     def nn_mermory(self):
-        # model = Sequential()
-        #
-        # model.add(Dense(input_dim=16, output_dim=500, activation='relu'))
-        # model.add(Dense(output_dim=500, activation='relu'))
+        x_train, y_train = [], []
+        for value in self.memory.values():
+            x_train.append(value[0])
+            y_train.append(value[1])
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
+        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.1), metrics=['accuracy'])
+        self.model.fit(x_train, y_train, batch_size=100, epochs=20)
+        self.epoch = 20
+        # self.model.fit(x_train[:200, :], y_train[:200, :], batch_size=10, initial_epoch=20, epochs=40)
+        # initial_epoch继续之前的训练，等于之前的训练数目
+
+    def update_nn(self):
         pass
 
     # 修改这个子程序
     def ai_move(self, mat2048):
-        # 输入是2048表格的2对数，输出1~4，表示上下左右 np.array((16,1))
+        # 输入是2048表格的2对数，输出1~4，表示上下左右 np.array((16,))
         return random.randint(1, 4)
 
     def ai_transfer(self):
         # 可以返回状态、动作和奖励
         self.playloops = self.playloops + 1
-        mat2048 = np.zeros((4, 4))
+        mat2048 = np.zeros(16)
         tiles = self.grid.tiles
         for t in tiles:
-            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
+            mat2048[tiles[t].row * 4 + tiles[t].column] = np.log2(tiles[t].value)
         # 2048表格的2对数
-        mat2048 = mat2048.reshape((1, -1)).astype(int)
+        mat2048 = mat2048.astype(int)
         old = self.score.get_score()
         pressed = self.ai_move(mat2048)  # this is random control
         if pressed == 1:
@@ -284,22 +302,24 @@ class GabrieleCirulli2048(tk.Tk):
         self.grid.clear_all()
         for n in range(self.START_TILES):
             self.grid.pop_tile()  # 对象加1
-        mar = self.ai_transfer()
-        self.add_memory(mar)
-
-        # def ai_train(self, epi=1):
-        #     for i in range(epi):
-        #         self.playloops = 0
-        #         self.score.reset_score()
-        #         self.grid.clear_all()
-        #         for n in range(self.START_TILES):
-        #             self.grid.pop_tile()  # 对象加1
-        #         while not self.grid.no_more_hints():  # game over
-        #             self.ai_transfer()
-        #             print(i + 1, '循环次数：', self.playloops)
-        #     print("训练结束")
-        #     print("有", len(self.tile_state.keys()), "个状态")
-        #     self.train = 0
+        while not self.grid.no_more_hints():  # game over
+            mar = self.ai_transfer()
+            self.add_memory(mar)
+            if self.playloops % 10 == 0:
+                self.update_nn()
+                # def ai_train(self, epi=1):
+                #     for i in range(epi):
+                #         self.playloops = 0
+                #         self.score.reset_score()
+                #         self.grid.clear_all()
+                #         for n in range(self.START_TILES):
+                #             self.grid.pop_tile()  # 对象加1
+                #         while not self.grid.no_more_hints():  # game over
+                #             self.ai_transfer()
+                #             print(i + 1, '循环次数：', self.playloops)
+                #     print("训练结束")
+                #     print("有", len(self.tile_state.keys()), "个状态")
+                #     self.train = 0
 
 
 if __name__ == "__main__":
