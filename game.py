@@ -32,7 +32,6 @@ import pickle
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation
 from keras.optimizers import SGD
-from keras.datasets import mnist
 
 try:
     import tkinter as tk
@@ -61,7 +60,7 @@ class GabrieleCirulli2048(tk.Tk):
         self.ai_time = 100
         self.memory = []
         self.memory_counter = 0
-        self.gamma = 0.2
+        self.gamma = 0.3
         self.episi = 0.2
         self.old_state_action = []
         self.memory_size = 0
@@ -213,7 +212,7 @@ class GabrieleCirulli2048(tk.Tk):
         else:
             self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
-    def save_memory(self, memo_size=5000):
+    def save_memory(self, memo_size=500):
         self.memory = []
         while self.memory_counter <= memo_size:
             self.playloops = 0
@@ -232,44 +231,63 @@ class GabrieleCirulli2048(tk.Tk):
                     # self.memory[-2][1][self.old_state_action[1] - 1] = \
                     #     self.old_state_action[2] + self.gamma * self.memory[-1][1][action - 1]
                     # q = r + gamma*q'
-                    self.memory.append([self.old_state_action, self.mat_sta])
+                    self.memory.append([self.old_state_action, mat_sta])
+                    if self.grid.no_more_hints():
+                        self.memory[-1].append(0)
+                    else:
+                        self.memory[-1].append(1)
                     self.old_state_action = [mat_sta, action, reward]
         self.memory_size = self.memory_counter
         print("记忆池添加结束！")
 
     def add_memory(self, mar):
         # mar = (mstate,action,reward)
-        self.memory.pop(random.randint(0, self.memory_size - 1))
+        mat_sta, action, reward = mar
         if self.playloops == 1:
             self.old_state_action = mar
-            self.memory.append((mar[0], np.array([0, 0, 0, 0])))
         else:
-            newq = self.model.predict(mar[0].reshape((1, -1))).reshape(4)
-            self.memory[-1][1][self.old_state_action[1] - 1] \
-                = self.old_state_action[2] + newq.max()
-            # q = r + gamma * q'
-            self.old_state_action = mar
-            self.memory.append((mar[0], newq))
+            self.memory.pop(random.randint(0, self.memory_size - 1))
+            # newq = self.model.predict(mat_sta.reshape((1, -1))).reshape(4)
+            # self.memory[-1][1][self.old_state_action[1] - 1] \
+            #     = self.old_state_action[2] + newq.max()
+            # # q = r + gamma * q'
+            self.memory.append([self.old_state_action, mat_sta])
+            if self.grid.no_more_hints():
+                self.memory[-1].append(0)
+            else:
+                self.memory[-1].append(1)
+            self.old_state_action = [mat_sta, action, reward]
+            # self.memory.append((mar[0], newq))
+            # self.old_state_action = mar
 
     def nn_mermory(self):
-        x_train, y_train = [], []
-        for value in self.memory:
-            x_train.append(value[0])
-            y_train.append(value[1])
-        x_train = np.array(x_train)
-        y_train = np.array(y_train)
+        # x_train, y_train = [], []
+        # for value in self.memory:
+        #     x_train.append(value[0])
+        #     y_train.append(value[1])
+        # x_train = np.array(x_train)
+        # y_train = np.array(y_train)
         self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.1), metrics=['accuracy'])
-        self.model.fit(x_train, y_train, batch_size=100, epochs=20)
+        # self.model.fit(x_train, y_train, batch_size=100, epochs=20)
         # self.model.fit(x_train[:200, :], y_train[:200, :], batch_size=10, initial_epoch=20, epochs=40)
-        self.epoch = 20
+        # self.epoch = 20
         # initial_epoch继续之前的训练，等于之前的训练数目
 
-    def update_nn(self, size=300):
+    def update_nn(self, size=10):
         x_train, y_train = [], []
         for i in np.random.choice(range(self.memory_size), size):
             value = self.memory[i]
-            x_train.append(value[0])
-            y_train.append(value[1])
+            s1, a1, r1 = value[0]
+            s2 = value[1]
+            q1_old = self.model.predict(s1.reshape((1, -1))).reshape(4)
+            q1_new = q1_old
+            if value[2] == 0:  # 结束了
+                q1_new[a1-1] = r1
+            else:
+                q2 = self.model.predict(s2.reshape((1, -1))).reshape(4)
+                q1_new[a1 - 1] = r1 + self.gamma*np.max(q2)
+            x_train.append(s1)
+            y_train.append(q1_new)
         x_train = np.array(x_train)
         y_train = np.array(y_train)
         self.model.fit(x_train, y_train, batch_size=100, initial_epoch=self.epoch, epochs=self.epoch + 10, verbose=0)
