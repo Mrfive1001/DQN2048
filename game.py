@@ -273,7 +273,7 @@ class GabrieleCirulli2048(tk.Tk):
         # self.epoch = 20
         # initial_epoch继续之前的训练，等于之前的训练数目
 
-    def update_nn(self, size=10):
+    def update_nn(self, size=100):
         x_train, y_train = [], []
         for i in np.random.choice(range(self.memory_size), size):
             value = self.memory[i]
@@ -290,7 +290,8 @@ class GabrieleCirulli2048(tk.Tk):
             y_train.append(q1_new)
         x_train = np.array(x_train)
         y_train = np.array(y_train)
-        self.model.fit(x_train, y_train, batch_size=100, initial_epoch=self.epoch, epochs=self.epoch + 10, verbose=0)
+        self.model.fit(x_train, y_train, batch_size=int(size/2),
+                       initial_epoch=self.epoch, epochs=self.epoch + 10, verbose=0)
         self.epoch += 10
 
     # 修改这个子程序
@@ -340,10 +341,10 @@ class GabrieleCirulli2048(tk.Tk):
                 mar = self.ai_transfer()
                 self.add_memory(mar)
                 # print("第%d步" % self.playloops)
-                if self.playloops % 10 == 0:
+                if self.playloops % 5 == 0:
                     self.update_nn()
             self.score_list.append(self.score.get_score())
-            print("第%d轮，分数是%d" % (item, self.score.get_score()))
+            print("第%d轮，分数是%d" % (item+1, self.score.get_score()))
         with open('myscore.pkl', 'wb') as f:
             pickle.dump(self.score_list, f)
 
