@@ -223,15 +223,16 @@ class GabrieleCirulli2048(tk.Tk):
                 self.grid.pop_tile()  # 对象加1
             while not self.grid.no_more_hints():  # game over
                 mat_sta, action, reward = self.ai_transfer()
-                self.memory_counter += 1
-                print("已收集", self.memory_counter, "条数据进记忆池")
-                self.memory.append((mat_sta, np.array([0, 0, 0, 0])))
                 if self.playloops == 1:
                     self.old_state_action = [mat_sta, action, reward]
                 else:
-                    self.memory[-2][1][self.old_state_action[1] - 1] = \
-                        self.old_state_action[2] + self.gamma * self.memory[-1][1][action - 1]
+                    self.memory_counter += 1
+                    print("已收集", self.memory_counter, "条数据进记忆池")
+                    # self.memory.append((mat_sta, np.array([0, 0, 0, 0])))
+                    # self.memory[-2][1][self.old_state_action[1] - 1] = \
+                    #     self.old_state_action[2] + self.gamma * self.memory[-1][1][action - 1]
                     # q = r + gamma*q'
+                    self.memory.append([self.old_state_action, self.mat_sta])
                     self.old_state_action = [mat_sta, action, reward]
         self.memory_size = self.memory_counter
         print("记忆池添加结束！")
@@ -271,7 +272,7 @@ class GabrieleCirulli2048(tk.Tk):
             y_train.append(value[1])
         x_train = np.array(x_train)
         y_train = np.array(y_train)
-        self.model.fit(x_train, y_train, batch_size=100, initial_epoch=self.epoch, epochs=self.epoch + 10,verbose=0)
+        self.model.fit(x_train, y_train, batch_size=100, initial_epoch=self.epoch, epochs=self.epoch + 10, verbose=0)
         self.epoch += 10
 
     # 修改这个子程序
@@ -324,7 +325,7 @@ class GabrieleCirulli2048(tk.Tk):
                 if self.playloops % 10 == 0:
                     self.update_nn()
             self.score_list.append(self.score.get_score())
-            print("第%d轮，分数是%d" %(item,self.score.get_score()))
+            print("第%d轮，分数是%d" % (item, self.score.get_score()))
         with open('myscore.pkl', 'wb') as f:
             pickle.dump(self.score_list, f)
 
