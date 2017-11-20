@@ -70,6 +70,11 @@ class GabrieleCirulli2048(tk.Tk):
         self.model.add(Dense(units=500, activation='relu'))
         self.model.add(Dense(units=4, activation='linear'))
 
+        self.target = Sequential()
+        self.target.add(Dense(input_dim=16, activation="relu", units=500))
+        self.target.add(Dense(units=500, activation='relu'))
+        self.target.add(Dense(units=4, activation='linear'))
+
         self.score_list = []
 
         self.initialize(**kw)
@@ -212,7 +217,7 @@ class GabrieleCirulli2048(tk.Tk):
         else:
             self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
-    def save_memory(self, memo_size=500):
+    def save_memory(self, memo_size=5000):
         self.memory = []
         while self.memory_counter <= memo_size:
             self.playloops = 0
@@ -260,14 +265,16 @@ class GabrieleCirulli2048(tk.Tk):
             # self.memory.append((mar[0], newq))
             # self.old_state_action = mar
 
-    def nn_mermory(self):
+    def nn_init(self):
+        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.1), metrics=['accuracy'])
+        # self.target.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.1), metrics=['accuracy'])
         # x_train, y_train = [], []
         # for value in self.memory:
         #     x_train.append(value[0])
         #     y_train.append(value[1])
         # x_train = np.array(x_train)
         # y_train = np.array(y_train)
-        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.1), metrics=['accuracy'])
+
         # self.model.fit(x_train, y_train, batch_size=100, epochs=20)
         # self.model.fit(x_train[:200, :], y_train[:200, :], batch_size=10, initial_epoch=20, epochs=40)
         # self.epoch = 20
@@ -282,17 +289,21 @@ class GabrieleCirulli2048(tk.Tk):
             q1_old = self.model.predict(s1.reshape((1, -1))).reshape(4)
             q1_new = q1_old
             if value[2] == 0:  # 结束了
-                q1_new[a1-1] = r1
+                q1_new[a1 - 1] = r1
             else:
-                q2 = self.model.predict(s2.reshape((1, -1))).reshape(4)
-                q1_new[a1 - 1] = r1 + self.gamma*np.max(q2)
+                q2 = self.target.predict(s2.reshape((1, -1))).reshape(4)
+                q1_new[a1 - 1] = r1 + self.gamma * np.max(q2)
             x_train.append(s1)
             y_train.append(q1_new)
         x_train = np.array(x_train)
         y_train = np.array(y_train)
-        self.model.fit(x_train, y_train, batch_size=int(size/2),
+        self.model.fit(x_train, y_train, batch_size=int(size / 2),
                        initial_epoch=self.epoch, epochs=self.epoch + 10, verbose=0)
         self.epoch += 10
+
+    def update_target(self):
+        self.model.save_weights('m1.h5')
+        self.target.load_weights('m1.h5')
 
     # 修改这个子程序
     def ai_move(self, mat2048):
@@ -329,7 +340,8 @@ class GabrieleCirulli2048(tk.Tk):
 
     def ai_train(self):
         self.save_memory()
-        self.nn_mermory()
+        self.nn_init()
+        self.update_target()
         self.ran = 0
         for item in range(5000):
             self.playloops = 0
@@ -341,10 +353,13 @@ class GabrieleCirulli2048(tk.Tk):
                 mar = self.ai_transfer()
                 self.add_memory(mar)
                 # print("第%d步" % self.playloops)
-                if self.playloops % 5 == 0:
+                if self.playloops % 1 == 0:
                     self.update_nn()
+                if self.playloops % 20 == 0:
+                    self.update_target()
+            self.update_target()
             self.score_list.append(self.score.get_score())
-            print("第%d轮，分数是%d" % (item+1, self.score.get_score()))
+            print("第%d轮，分数是%d" % (item + 1, self.score.get_score()))
         with open('myscore.pkl', 'wb') as f:
             pickle.dump(self.score_list, f)
 
