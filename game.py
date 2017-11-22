@@ -257,7 +257,7 @@ class GabrieleCirulli2048(tk.Tk):
         if self.playloops == 1:
             self.old_state_action = mar
         else:
-            self.memory.pop(random.randint(0, self.memory_size - 1))
+            self.memory.pop(random.randint(0, self.memory_size))
             # newq = self.real.predict(mat_sta.reshape((1, -1))).reshape(4)
             # self.memory[-1][1][self.old_state_action[1] - 1] \
             #     = self.old_state_action[2] + newq.max()
