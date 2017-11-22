@@ -45,6 +45,13 @@ except:
 
 from src import game2048_score as GS
 from src import game2048_grid as GG
+from RL_brain import DeepQNetwork
+
+RL = DeepQNetwork(n_actions=4,
+                  n_features=16,
+                  learning_rate=0.01, e_greedy=0.9,
+                  replace_target_iter=200, memory_size=2000,
+                  e_greedy_increment=0.0008, )
 
 
 class GabrieleCirulli2048(tk.Tk):
@@ -64,6 +71,7 @@ class GabrieleCirulli2048(tk.Tk):
         self.gamma = 0.3  # 长远收益的比例
         self.episi = 0.2  # 探索概率
         self.old_state_action = []
+        self.oldst = []
         self.epoch = 0  # 神经网络训练轮数
 
         # 真实Q网络
@@ -325,14 +333,16 @@ class GabrieleCirulli2048(tk.Tk):
         # 2048表格的2对数
         mat2048 = mat2048.astype(int)
         old = self.score.get_score()
-        pressed = self.ai_move(mat2048)  # this is random control
-        if pressed == 1:
+        # pressed = self.ai_move(mat2048)  # this is random control
+        pressed = RL.choose_action(mat2048)
+        self.oldst = [mat2048, pressed]
+        if pressed == 0:
             self.grid.move_tiles_left()
-        elif pressed == 2:
+        elif pressed == 1:
             self.grid.move_tiles_right()
-        elif pressed == 3:
+        elif pressed == 2:
             self.grid.move_tiles_up()
-        elif pressed == 4:
+        elif pressed == 3:
             self.grid.move_tiles_down()
         else:
             pass
@@ -340,11 +350,12 @@ class GabrieleCirulli2048(tk.Tk):
         return mat2048, pressed, new - old
 
     def ai_train(self):
-        self.save_memory()  # 增加记忆池
-        self.nn_init()  # 初始化nn
-        self.update_target()  # 更新target网络
-        self.ran = 0
-        for item in range(500):
+        # self.save_memory()  # 增加记忆池
+        # self.nn_init()  # 初始化nn
+        # self.update_target()  # 更新target网络
+        # self.ran = 0
+        totle_step = 0
+        for item in range(5000):
             # 初始化
             self.playloops = 0
             self.score.reset_score()
@@ -352,14 +363,26 @@ class GabrieleCirulli2048(tk.Tk):
             for n in range(self.START_TILES):
                 self.grid.pop_tile()  # 对象加1
             while not self.grid.no_more_hints():  # game over
-                mar = self.ai_transfer()
-                self.add_memory(mar)  # 添加记忆
+                mat_sta, action, reward = self.ai_transfer()
+                RL.store_transition(self.oldst[0], self.oldst[1],
+                                    reward, mat_sta)
+
+                totle_step += 1
+                if totle_step % 50 == 0:
+                    RL.learn()
+                # if self.playloops == 1:
+                #     self.old_state_action = [mat_sta, action, reward]
+                #     continue
+                # else:
+                #     RL.store_transition(self.old_state_action[0], self.old_state_action[1]
+                #                         )
+                # self.add_memory(mar)  # 添加记忆
                 # print("第%d步" % self.playloops)
                 # if self.playloops % 1 == 0:
-                self.update_nn()  # 更新real nn
-                if self.playloops % 20 == 0:  # 20步更新一次target
-                    self.update_target()
-            self.update_target()
+            #     self.update_nn()  # 更新real nn
+            #     if self.playloops % 20 == 0:  # 20步更新一次target
+            #         self.update_target()
+            # self.update_target()
             self.score_list.append(self.score.get_score())
             print("第%d轮，分数是%d" % (item + 1, self.score.get_score()))
         # 保存结果
