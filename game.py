@@ -50,8 +50,8 @@ from RL_brain import DeepQNetwork
 RL = DeepQNetwork(n_actions=4,
                   n_features=16,
                   learning_rate=0.01, e_greedy=0.9,
-                  replace_target_iter=200, memory_size=2000,
-                  e_greedy_increment=0.0008, )
+                  replace_target_iter=200, memory_size=5000,
+                  e_greedy_increment=0.0008)
 
 
 class GabrieleCirulli2048(tk.Tk):
@@ -63,23 +63,7 @@ class GabrieleCirulli2048(tk.Tk):
 
         self.train = kw.get("train", 0)  # 从类读取是否训练
         self.playloops = 0  # 玩的次数
-        self.ran = 1  # 初始化记忆池
-
-        self.ai_time = 100  # 电脑玩的时候每隔多久执行一次
-        self.memory = []  # 记忆池
-        self.memory_size = 0  # 记忆池容量
-        self.gamma = 0.3  # 长远收益的比例
-        self.episi = 0.2  # 探索概率
-        self.old_state_action = []
         self.oldst = []
-        self.epoch = 0  # 神经网络训练轮数
-
-        # 真实Q网络
-        self.real = Sequential()
-
-        # 目标Q网络
-        self.target = Sequential()
-
         self.score_list = []  # 得到的分数列表
         self.initialize(**kw)  # 画图的初始化
 
@@ -229,100 +213,6 @@ class GabrieleCirulli2048(tk.Tk):
         else:
             self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
-    # 生成记忆池
-    def save_memory(self, memo_size=5000):
-        self.memory = []
-        while self.memory_size <= memo_size:
-            # 开始游戏前的准备
-            self.playloops = 0
-            self.score.reset_score()
-            self.grid.clear_all()
-            # 随机加两个数字
-            for n in range(self.START_TILES):
-                self.grid.pop_tile()  # 对象加1
-            # 当没有结束的时候，一直循环
-            while not self.grid.no_more_hints():  # game over
-                mat_sta, action, reward = self.ai_transfer()
-                if self.playloops == 1:
-                    self.old_state_action = [mat_sta, action, reward]
-                else:
-                    self.memory_size += 1
-                    print("已收集", self.memory_size, "条数据进记忆池")
-                    # 加入记忆[[state,action,reward],next_state,not_end]
-                    self.memory.append([self.old_state_action, mat_sta])
-                    # 判断状态是否结束
-                    if self.grid.no_more_hints():
-                        self.memory[-1].append(0)
-                    else:
-                        self.memory[-1].append(1)
-                    self.old_state_action = [mat_sta, action, reward]
-        print("记忆池添加结束！")
-
-    def add_memory(self, mar):
-        # 与保存记忆池差不太多
-        # mar = (mstate,action,reward)
-        mat_sta, action, reward = mar
-        if self.playloops == 1:
-            self.old_state_action = mar
-        else:
-            self.memory.pop(random.randint(0, self.memory_size))
-            # newq = self.real.predict(mat_sta.reshape((1, -1))).reshape(4)
-            # self.memory[-1][1][self.old_state_action[1] - 1] \
-            #     = self.old_state_action[2] + newq.max()
-            # # q = r + gamma * q'
-            self.memory.append([self.old_state_action, mat_sta])
-            if self.grid.no_more_hints():
-                self.memory[-1].append(0)
-            else:
-                self.memory[-1].append(1)
-            self.old_state_action = [mat_sta, action, reward]
-
-    def nn_init(self):
-        self.real.add(Dense(input_dim=16, activation="relu", units=500))
-        self.real.add(Dense(units=500, activation='relu'))
-        self.real.add(Dense(units=4, activation='linear'))
-        self.real.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.1), metrics=['accuracy'])
-
-        self.target.add(Dense(input_dim=16, activation="relu", units=500))
-        self.target.add(Dense(units=500, activation='relu'))
-        self.target.add(Dense(units=4, activation='linear'))
-        # self.real.fit(x_train[:200, :], y_train[:200, :], batch_size=10, initial_epoch=20, epochs=40)
-
-    def update_nn(self, size=100):
-        # 从记忆池里面随机选出size个样本
-        x_train, y_train = [], []
-        for i in np.random.choice(range(self.memory_size), size):
-            value = self.memory[i]
-            s1, a1, r1 = value[0]
-            s2 = value[1]
-            q1_old = self.real.predict(s1.reshape((1, -1))).reshape(4)
-            q1_new = q1_old
-            if value[2] == 0:  # 结束了
-                q1_new[a1 - 1] = self.score.get_score()
-            else:  # 更新Q值
-                q2 = self.target.predict(s2.reshape((1, -1))).reshape(4)
-                q1_new[a1 - 1] = 1 + self.gamma * np.max(q2)
-            x_train.append(s1)
-            y_train.append(q1_new)
-        x_train = np.array(x_train)
-        y_train = np.array(y_train)
-        self.real.fit(x_train, y_train, batch_size=int(size / 2),
-                      initial_epoch=self.epoch, epochs=self.epoch + 10, verbose=0)  # 不加显示
-        self.epoch += 10
-
-    def update_target(self):
-        self.real.save_weights('m1.h5')
-        self.target.load_weights('m1.h5')
-
-    # 修改这个子程序
-    def ai_move(self, mat2048):
-        # 输入是2048表格的2对数，输出1~4，表示上下左右 np.array((16,))
-        # return random.randint(1, 4)
-        if self.ran or np.random.binomial(1, self.episi):  # 1出现episi的概率
-            return random.randint(1, 4)
-        else:
-            return np.argmax(self.real.predict(mat2048.reshape((1, -1))).reshape(4)) + 1
-
     def ai_transfer(self):
         # 可以返回状态、动作和奖励
         self.playloops = self.playloops + 1
@@ -350,12 +240,8 @@ class GabrieleCirulli2048(tk.Tk):
         return mat2048, pressed, new - old
 
     def ai_train(self):
-        # self.save_memory()  # 增加记忆池
-        # self.nn_init()  # 初始化nn
-        # self.update_target()  # 更新target网络
-        # self.ran = 0
         totle_step = 0
-        for item in range(5000):
+        for item in range(50000):
             # 初始化
             self.playloops = 0
             self.score.reset_score()
@@ -364,25 +250,18 @@ class GabrieleCirulli2048(tk.Tk):
                 self.grid.pop_tile()  # 对象加1
             while not self.grid.no_more_hints():  # game over
                 mat_sta, action, reward = self.ai_transfer()
+                if self.grid.no_more_hints():
+                    reward = self.score.get_score()
+                elif mat_sta.all() == self.oldst[0].all():
+                    reward = -10
+                else:
+                    reward = 1
                 RL.store_transition(self.oldst[0], self.oldst[1],
                                     reward, mat_sta)
-
                 totle_step += 1
-                if totle_step % 50 == 0:
+                if totle_step > 1000:
+                    # totle_step = 0
                     RL.learn()
-                # if self.playloops == 1:
-                #     self.old_state_action = [mat_sta, action, reward]
-                #     continue
-                # else:
-                #     RL.store_transition(self.old_state_action[0], self.old_state_action[1]
-                #                         )
-                # self.add_memory(mar)  # 添加记忆
-                # print("第%d步" % self.playloops)
-                # if self.playloops % 1 == 0:
-            #     self.update_nn()  # 更新real nn
-            #     if self.playloops % 20 == 0:  # 20步更新一次target
-            #         self.update_target()
-            # self.update_target()
             self.score_list.append(self.score.get_score())
             print("第%d轮，分数是%d" % (item + 1, self.score.get_score()))
         # 保存结果
