@@ -50,7 +50,7 @@ from RL_brain import DeepQNetwork
 RL = DeepQNetwork(n_actions=4,
                   n_features=16,
                   learning_rate=0.01, e_greedy=0.9,
-                  replace_target_iter=200, memory_size=5000,
+                  replace_target_iter=100, memory_size=5000,
                   e_greedy_increment=0.0008)
 
 
@@ -241,7 +241,7 @@ class GabrieleCirulli2048(tk.Tk):
 
     def ai_train(self):
         totle_step = 0
-        for item in range(50000):
+        for item in range(5000):
             # 初始化
             self.playloops = 0
             self.score.reset_score()
