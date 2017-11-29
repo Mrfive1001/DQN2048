@@ -32,6 +32,7 @@ import pickle
 from keras.models import Sequential
 from keras.layers.core import Dense, Activation
 from keras.optimizers import SGD
+import matplotlib.pyplot as plt
 
 try:
     import tkinter as tk
@@ -46,97 +47,13 @@ except:
 from src import game2048_score as GS
 from src import game2048_grid as GG
 from RL_brain import DeepQNetwork
+import move
 
 RL = DeepQNetwork(n_actions=4,
                   n_features=16,
                   learning_rate=0.01, e_greedy=0.97,
-                  replace_target_iter=100, memory_size=50000,
-                  e_greedy_increment=0.000008, batch_size=500)
-Size = 4
-
-
-class UpdateNew(object):
-    def __init__(self, matrix):
-        super(UpdateNew, self).__init__()
-        self.matrix = matrix
-        self.score = 0
-        self.zerolist = []
-
-    def combineList(self, rowlist):
-        start_num = 0
-        end_num = Size - rowlist.count(0) - 1
-        while start_num < end_num:
-            if rowlist[start_num] == rowlist[start_num + 1]:
-                rowlist[start_num] *= 2
-                self.score += int(rowlist[start_num])  # 每次返回累加的分数
-                rowlist[start_num + 1:] = rowlist[start_num + 2:]
-                rowlist.append(0)
-            start_num += 1
-        return rowlist
-
-    def removeZero(self, rowlist):
-        while True:
-            mid = rowlist[:]  # 拷贝一份list
-            try:
-                rowlist.remove(0)
-                rowlist.append(0)
-            except:
-                pass
-            if rowlist == mid:
-                break
-        return self.combineList(rowlist)
-
-    def toSequence(self, matrix):
-        lastmatrix = matrix.copy()
-        m, n = matrix.shape  # 获得矩阵的行，列
-        for i in range(m):
-            newList = self.removeZero(list(matrix[i]))
-            matrix[i] = newList
-            for k in range(Size - 1, Size - newList.count(0) - 1, -1):  # 添加所有有0的行号列号
-                self.zerolist.append((i, k))
-        return matrix
-
-
-class LeftAction(UpdateNew):
-    def __init__(self, matrix):
-        super(LeftAction, self).__init__(matrix)
-
-    def handleData(self):
-        matrix = self.matrix.copy()  # 获得一份矩阵的复制
-        newmatrix = self.toSequence(matrix)
-        return newmatrix
-
-
-class RightAction(UpdateNew):
-    def __init__(self, matrix):
-        super(RightAction, self).__init__(matrix)
-
-    def handleData(self):
-        matrix = self.matrix.copy()[:, ::-1]
-        newmatrix = self.toSequence(matrix)
-        return newmatrix[:, ::-1]
-
-
-class UpAction(UpdateNew):
-    """docstring for UpAction"""
-
-    def __init__(self, matrix):
-        super(UpAction, self).__init__(matrix)
-
-    def handleData(self):
-        matrix = self.matrix.copy().T
-        newmatrix = self.toSequence(matrix)
-        return newmatrix.T
-
-
-class DownAction(UpdateNew):
-    def __init__(self, matrix):
-        super(DownAction, self).__init__(matrix)
-
-    def handleData(self):
-        matrix = self.matrix.copy()[::-1].T
-        newmatrix = self.toSequence(matrix)
-        return newmatrix.T[::-1]
+                  replace_target_iter=200, memory_size=50000,
+                  e_greedy_increment=0.0008, batch_size=1000)
 
 
 class GabrieleCirulli2048(tk.Tk):
@@ -278,17 +195,18 @@ class GabrieleCirulli2048(tk.Tk):
         tiles = self.grid.tiles
         for t in tiles:
             mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
-        pressed = RL.choose_action(mat2048.reshape(16))  # this is random control
-        if pressed == 1:
+        # pressed = RL.choose_action(mat2048.reshape(16))  # this is random control
+        pressed = self.ai_rule(mat2048)
+        if pressed == 0:
             print("Move left\n")
             self.grid.move_tiles_left()
-        elif pressed == 2:
+        elif pressed == 1:
             print("Move right\n")
             self.grid.move_tiles_right()
-        elif pressed == 3:
+        elif pressed == 2:
             print("Move up\n")
             self.grid.move_tiles_up()
-        elif pressed == 4:
+        elif pressed == 3:
             print("Move down\n")
             self.grid.move_tiles_down()
         else:
@@ -298,6 +216,23 @@ class GabrieleCirulli2048(tk.Tk):
             pass
         else:
             self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
+
+    def ai_rule(self, mat):
+        mat = mat.copy()
+        if mat.shape != (4, 4):
+            mat.reshape((4, 4))
+        next_ = [move.LeftAction(mat).handleData(), move.RightAction(mat).handleData(),
+                 move.UpAction(mat).handleData(), move.DownAction(mat).handleData()]
+        sco = []
+        for st in next_:
+            if (st == mat).all():
+                sco.append(-10)
+            else:
+                st_ = move.TestScore(st)
+                sco_ = st_.EmptyTest() + st_.Monotonicity() + st_.ALLnum() + st_.equall() + st_.wheremax()
+                sco.append(sco_)
+        pp = np.array(sco).argmax()
+        return pp
 
     def ai_transfer(self):
         # 可以返回状态、动作和奖励
@@ -329,7 +264,7 @@ class GabrieleCirulli2048(tk.Tk):
 
     def ai_train(self):
         totle_step = 0
-        for item in range(2000):
+        for item in range(20):
             # 初始化
             self.playloops = 0
             self.score.reset_score()
@@ -338,12 +273,15 @@ class GabrieleCirulli2048(tk.Tk):
                 self.grid.pop_tile()  # 对象加1
             while not self.grid.no_more_hints():  # game over
                 mat_sta, action, reward = self.ai_transfer()
-                if self.grid.no_more_hints():
-                    reward = self.score.get_score()
-                elif mat_sta.all() == self.oldst[0].all():
+                # if self.grid.no_more_hints():
+                #     reward = self.score.get_score()
+                #     pass
+                # elif mat_sta.all() == self.oldst[0].all():
+                #     reward = -10
+                # else:
+                #     reward = 1
+                if mat_sta.all() == self.oldst[0].all():
                     reward = -10
-                else:
-                    reward = 1
                 RL.store_transition(self.oldst[0], self.oldst[1],
                                     reward, mat_sta)
                 totle_step += 1
@@ -352,11 +290,15 @@ class GabrieleCirulli2048(tk.Tk):
                     RL.learn()
             self.score_list.append(self.score.get_score())
             print("第%d轮，分数是%d" % (item + 1, self.score.get_score()))
-        # 保存结果
-        RL.plot_cost()
-        with open('myscore.pkl', 'wb') as f:
-            pickle.dump(self.score_list, f)
+            # 保存结果
+            # RL.plot_cost()
+            # with open('myscore.pkl', 'wb') as f:
+            #     pickle.dump(self.score_list, f)
+            # plt.ion()
+            # plt.plot(self.score_list)
+            # plt.show()
 
 
 if __name__ == "__main__":
-    GabrieleCirulli2048(train=1).run()
+    ai = GabrieleCirulli2048(train=0)
+    ai.run()
