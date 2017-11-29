@@ -46,14 +46,7 @@ except:
 
 from src import game2048_score as GS
 from src import game2048_grid as GG
-from RL_brain import DeepQNetwork
 import move
-
-RL = DeepQNetwork(n_actions=4,
-                  n_features=16,
-                  learning_rate=0.01, e_greedy=0.97,
-                  replace_target_iter=200, memory_size=50000,
-                  e_greedy_increment=0.0008, batch_size=1000)
 
 
 class GabrieleCirulli2048(tk.Tk):
@@ -64,22 +57,17 @@ class GabrieleCirulli2048(tk.Tk):
         tk.Tk.__init__(self)
 
         self.train = kw.get("train", 0)  # 从类读取是否训练
-        self.playloops = 0  # 玩的次数
-        self.oldst = []
-        self.score_list = []  # 得到的分数列表
-        self.ai_time = 100
+        self.rule = kw.get("rule", 1)  # 从类读取是否训练
+        self.ai_time = kw.get('ai_time', 100)
         self.initialize(**kw)  # 画图的初始化
 
     def run(self, **kw):
         # 主程序的执行过程，如果训练那就不画图了
-        if self.train:
-            self.ai_train()
-        else:
-            # 画出游戏界面
-            self.center_window()
-            self.deiconify()
-            self.new_game(**kw)
-            self.mainloop()
+        # 画出游戏界面
+        self.center_window()
+        self.deiconify()
+        self.new_game(**kw)
+        self.mainloop()
 
     # 画图
     def center_window(self, tk_event=None, *args, **kw):
@@ -169,8 +157,8 @@ class GabrieleCirulli2048(tk.Tk):
             self.score.add_score(value)
         else:
             self.score.set_score(value)
-
-        self.hiscore.high_score(self.score.get_score())
+        if self.train == 0:
+            self.hiscore.high_score(self.score.get_score())
 
     # 界面新开一个ai游戏
     def ai_new_game(self, *args, **kw):
@@ -181,41 +169,8 @@ class GabrieleCirulli2048(tk.Tk):
             self.after(
                 10 * random.randrange(3, 7), self.grid.pop_tile
             )
-        self.playloops = 0
-        self.after(self.ai_time, self.ai_pressed)  # 多长时间后调用下一次ai_pressed
+        self.after(self.ai_time, self.step)  # 多长时间后调用下一次
         self.bind_all("<Key>", self.on_keypressed)
-
-    # 定义一个AI程序，按了界面上的ai运行按钮后会定时触发
-    # 在这个子程序里面运行一次AI操作
-    # 不需要训练的在界面显示的ai展示
-    def ai_pressed(self, tk_event=None, *args, **kw):
-        matrix = self.grid.matrix.matrix
-        self.playloops = self.playloops + 1
-        mat2048 = np.zeros((4, 4))
-        tiles = self.grid.tiles
-        for t in tiles:
-            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
-        # pressed = RL.choose_action(mat2048.reshape(16))  # this is random control
-        pressed = self.ai_rule(mat2048)
-        if pressed == 0:
-            print("Move left\n")
-            self.grid.move_tiles_left()
-        elif pressed == 1:
-            print("Move right\n")
-            self.grid.move_tiles_right()
-        elif pressed == 2:
-            print("Move up\n")
-            self.grid.move_tiles_up()
-        elif pressed == 3:
-            print("Move down\n")
-            self.grid.move_tiles_down()
-        else:
-            pass
-        if self.grid.no_more_hints():  # game over
-            # self.ai_new_game()  # play ai again
-            pass
-        else:
-            self.after(self.ai_time, self.ai_pressed)  # ai press again after 200 ms
 
     def ai_rule(self, mat):
         mat = mat.copy()
@@ -234,21 +189,18 @@ class GabrieleCirulli2048(tk.Tk):
         pp = np.array(sco).argmax()
         return pp
 
-    def ai_transfer(self):
+    def step(self, action=0):
         # 可以返回状态、动作和奖励
-        self.playloops = self.playloops + 1
-        mat2048 = np.zeros(16)
+        mat2048 = np.zeros((4, 4))
         tiles = self.grid.tiles
         for t in tiles:
-            mat2048[tiles[t].row * 4 + tiles[t].column] = np.log2(tiles[t].value)
+            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
         # 2048表格的2对数
-        mat2048 = mat2048.astype(int)
-        # # print(mat2048)
-        # seo = RightAction(mat2048.reshape((4, 4))).zerolist
-        # print(len(seo))
         old = self.score.get_score()
-        pressed = RL.choose_action(mat2048)
-        self.oldst = [mat2048, pressed]
+        if self.rule:
+            pressed = self.ai_rule(mat2048)
+        else:
+            pressed = action
         if pressed == 0:
             self.grid.move_tiles_left()
         elif pressed == 1:
@@ -260,45 +212,38 @@ class GabrieleCirulli2048(tk.Tk):
         else:
             pass
         new = self.score.get_score()  # 读取总分数
-        return mat2048, pressed, new - old
+        done = self.grid.no_more_hints()
+        if self.train:
+            return mat2048.reshape(16), new - old, done
+        else:
+            if done:
+                pass
+            else:
+                self.after(self.ai_time, self.step)
 
-    def ai_train(self):
-        totle_step = 0
-        for item in range(20):
-            # 初始化
-            self.playloops = 0
-            self.score.reset_score()
-            self.grid.clear_all()
-            for n in range(self.START_TILES):
-                self.grid.pop_tile()  # 对象加1
-            while not self.grid.no_more_hints():  # game over
-                mat_sta, action, reward = self.ai_transfer()
-                # if self.grid.no_more_hints():
-                #     reward = self.score.get_score()
-                #     pass
-                # elif mat_sta.all() == self.oldst[0].all():
-                #     reward = -10
-                # else:
-                #     reward = 1
-                if mat_sta.all() == self.oldst[0].all():
-                    reward = -10
-                RL.store_transition(self.oldst[0], self.oldst[1],
-                                    reward, mat_sta)
-                totle_step += 1
-                if totle_step > RL.memory_size:
-                    # totle_step = 0
-                    RL.learn()
-            self.score_list.append(self.score.get_score())
-            print("第%d轮，分数是%d" % (item + 1, self.score.get_score()))
-            # 保存结果
-            # RL.plot_cost()
-            # with open('myscore.pkl', 'wb') as f:
-            #     pickle.dump(self.score_list, f)
-            # plt.ion()
-            # plt.plot(self.score_list)
-            # plt.show()
+    def reset(self):
+        self.score.reset_score()
+        self.grid.clear_all()
+        for _ in range(self.START_TILES):
+            self.grid.pop_tile()  # 对象加1
+        mat2048 = np.zeros((4, 4))
+        tiles = self.grid.tiles
+        for t in tiles:
+            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
+        # 2048表格的2对数
+        mat2048 = mat2048.astype(int)
+        return mat2048.reshape(16)
+
+    def get_score(self):
+        return self.score.get_score()
+
+    def set_train(self, tt):
+        self.train = tt
+
+    def set_rule(self, rr):
+        self.rule = rr
 
 
 if __name__ == "__main__":
-    ai = GabrieleCirulli2048(train=0)
+    ai = GabrieleCirulli2048()
     ai.run()
