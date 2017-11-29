@@ -49,9 +49,94 @@ from RL_brain import DeepQNetwork
 
 RL = DeepQNetwork(n_actions=4,
                   n_features=16,
-                  learning_rate=0.01, e_greedy=0.9,
-                  replace_target_iter=100, memory_size=5000,
-                  e_greedy_increment=0.0008)
+                  learning_rate=0.01, e_greedy=0.97,
+                  replace_target_iter=100, memory_size=50000,
+                  e_greedy_increment=0.000008, batch_size=500)
+Size = 4
+
+
+class UpdateNew(object):
+    def __init__(self, matrix):
+        super(UpdateNew, self).__init__()
+        self.matrix = matrix
+        self.score = 0
+        self.zerolist = []
+
+    def combineList(self, rowlist):
+        start_num = 0
+        end_num = Size - rowlist.count(0) - 1
+        while start_num < end_num:
+            if rowlist[start_num] == rowlist[start_num + 1]:
+                rowlist[start_num] *= 2
+                self.score += int(rowlist[start_num])  # 每次返回累加的分数
+                rowlist[start_num + 1:] = rowlist[start_num + 2:]
+                rowlist.append(0)
+            start_num += 1
+        return rowlist
+
+    def removeZero(self, rowlist):
+        while True:
+            mid = rowlist[:]  # 拷贝一份list
+            try:
+                rowlist.remove(0)
+                rowlist.append(0)
+            except:
+                pass
+            if rowlist == mid:
+                break
+        return self.combineList(rowlist)
+
+    def toSequence(self, matrix):
+        lastmatrix = matrix.copy()
+        m, n = matrix.shape  # 获得矩阵的行，列
+        for i in range(m):
+            newList = self.removeZero(list(matrix[i]))
+            matrix[i] = newList
+            for k in range(Size - 1, Size - newList.count(0) - 1, -1):  # 添加所有有0的行号列号
+                self.zerolist.append((i, k))
+        return matrix
+
+
+class LeftAction(UpdateNew):
+    def __init__(self, matrix):
+        super(LeftAction, self).__init__(matrix)
+
+    def handleData(self):
+        matrix = self.matrix.copy()  # 获得一份矩阵的复制
+        newmatrix = self.toSequence(matrix)
+        return newmatrix
+
+
+class RightAction(UpdateNew):
+    def __init__(self, matrix):
+        super(RightAction, self).__init__(matrix)
+
+    def handleData(self):
+        matrix = self.matrix.copy()[:, ::-1]
+        newmatrix = self.toSequence(matrix)
+        return newmatrix[:, ::-1]
+
+
+class UpAction(UpdateNew):
+    """docstring for UpAction"""
+
+    def __init__(self, matrix):
+        super(UpAction, self).__init__(matrix)
+
+    def handleData(self):
+        matrix = self.matrix.copy().T
+        newmatrix = self.toSequence(matrix)
+        return newmatrix.T
+
+
+class DownAction(UpdateNew):
+    def __init__(self, matrix):
+        super(DownAction, self).__init__(matrix)
+
+    def handleData(self):
+        matrix = self.matrix.copy()[::-1].T
+        newmatrix = self.toSequence(matrix)
+        return newmatrix.T[::-1]
 
 
 class GabrieleCirulli2048(tk.Tk):
@@ -65,6 +150,7 @@ class GabrieleCirulli2048(tk.Tk):
         self.playloops = 0  # 玩的次数
         self.oldst = []
         self.score_list = []  # 得到的分数列表
+        self.ai_time = 100
         self.initialize(**kw)  # 画图的初始化
 
     def run(self, **kw):
@@ -192,7 +278,7 @@ class GabrieleCirulli2048(tk.Tk):
         tiles = self.grid.tiles
         for t in tiles:
             mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
-        pressed = self.ai_move(mat2048)  # this is random control
+        pressed = RL.choose_action(mat2048.reshape(16))  # this is random control
         if pressed == 1:
             print("Move left\n")
             self.grid.move_tiles_left()
@@ -222,8 +308,10 @@ class GabrieleCirulli2048(tk.Tk):
             mat2048[tiles[t].row * 4 + tiles[t].column] = np.log2(tiles[t].value)
         # 2048表格的2对数
         mat2048 = mat2048.astype(int)
+        # # print(mat2048)
+        # seo = RightAction(mat2048.reshape((4, 4))).zerolist
+        # print(len(seo))
         old = self.score.get_score()
-        # pressed = self.ai_move(mat2048)  # this is random control
         pressed = RL.choose_action(mat2048)
         self.oldst = [mat2048, pressed]
         if pressed == 0:
@@ -241,7 +329,7 @@ class GabrieleCirulli2048(tk.Tk):
 
     def ai_train(self):
         totle_step = 0
-        for item in range(5000):
+        for item in range(2000):
             # 初始化
             self.playloops = 0
             self.score.reset_score()
@@ -259,12 +347,13 @@ class GabrieleCirulli2048(tk.Tk):
                 RL.store_transition(self.oldst[0], self.oldst[1],
                                     reward, mat_sta)
                 totle_step += 1
-                if totle_step > 1000:
+                if totle_step > RL.memory_size:
                     # totle_step = 0
                     RL.learn()
             self.score_list.append(self.score.get_score())
             print("第%d轮，分数是%d" % (item + 1, self.score.get_score()))
         # 保存结果
+        RL.plot_cost()
         with open('myscore.pkl', 'wb') as f:
             pickle.dump(self.score_list, f)
 
