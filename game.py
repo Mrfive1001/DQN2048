@@ -29,9 +29,6 @@ import copy
 import numpy as np
 import time
 import pickle
-from keras.models import Sequential
-from keras.layers.core import Dense, Activation
-from keras.optimizers import SGD
 import matplotlib.pyplot as plt
 
 try:

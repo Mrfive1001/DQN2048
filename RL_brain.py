@@ -59,7 +59,7 @@ class DeepQNetwork:
         self.sess = tf.Session()
 
         if output_graph:
-            # $ tensorboard --logdir=logs
+            # $ tensorboard
             # tf.train.SummaryWriter soon be deprecated, use following
             tf.summary.FileWriter("logs//", self.get_default_graph())
 
