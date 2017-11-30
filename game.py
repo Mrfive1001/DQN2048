@@ -172,8 +172,11 @@ class GabrieleCirulli2048(tk.Tk):
         self.after(self.ai_time, self.step)  # 多长时间后调用下一次
         self.bind_all("<Key>", self.on_keypressed)
 
-    def ai_rule(self, mat):
-        mat = mat.copy()
+    # 规则式选择动作
+    def ai_rule(self, mate):
+        mat = mate.copy()  # 对数形式
+        mat = 2 ** mat
+        mat[mat == 1] = 0
         if mat.shape != (4, 4):
             mat.reshape((4, 4))
         next_ = [move.LeftAction(mat).handleData(), move.RightAction(mat).handleData(),

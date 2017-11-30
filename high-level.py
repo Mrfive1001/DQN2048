@@ -12,7 +12,7 @@ RL = DeepQNetwork(n_actions=4,
 
 env = GabrieleCirulli2048(train=1, rule=0)
 totle = 0
-for i in range(100):
+for i in range(1000):
     observation = env.reset()
     playloops = 0
     while True:
@@ -22,7 +22,7 @@ for i in range(100):
         RL.store_transition(observation, action, reward, observation_next)
         playloops += 1
         totle += 1
-        if totle > 1000:
+        if totle % 10 == 0:
             RL.learn()
         if done:
             break
