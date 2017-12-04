@@ -236,13 +236,13 @@ class GabrieleCirulli2048(tk.Tk):
             scores.append(score)
             highs.append(high)
             print("第%d轮，得分%d，胜利与否%d,到达较高水平%d" % (i + 1, score, isWin, high))
-        # print("平均胜率为%.2f,平均分数为%.2f" % (sum(win) / float(iters), sum(scores) / float(iters)))
+        print("平均胜率为%.2f,平均分数为%.2f" % (sum(win) / float(iters), sum(scores) / float(iters)))
         with open('mc_result.pkl', 'wb') as out:
             pickle.dump((scores, win, highs), out)
 
-            # 读数据
-            # with open('mc_result.pkl', 'rb') as read:
-            #     scores, win = pickle.load(read)
+        # 读数据
+        # with open('mc_result.pkl', 'rb') as read:
+        #     scores, win，high = pickle.load(read)
 
 
 if __name__ == "__main__":
