@@ -53,14 +53,14 @@ class GabrieleCirulli2048(tk.Tk):
     def __init__(self, **kw):
         tk.Tk.__init__(self)
 
-        self.train = kw.get("train", 0)  # 从类读取是否训练
-        self.rule = kw.get("rule", 1)  # 从类读取是否训练
-        self.ai_time = kw.get('ai_time', 12)
+        self.train = kw.get("train", 1)  # 从类读取是否训练
+        self.ai_time = kw.get('ai_time', 2)
         self.initialize(**kw)  # 画图的初始化
 
     def run(self, **kw):
         # 主程序的执行过程，如果训练那就不画图了
         # 画出游戏界面
+        self.train = 0
         self.center_window()
         self.deiconify()
         self.new_game(**kw)
@@ -172,27 +172,17 @@ class GabrieleCirulli2048(tk.Tk):
     # 规则式选择动作
     def ai_rule(self, mate):
         mat = mate.copy()  # 对数形式
-        next_ = [move.LeftAction(mat).handleData(), move.RightAction(mat).handleData(),
-                 move.UpAction(mat).handleData(), move.DownAction(mat).handleData()]
-        sco = []
-        for st in next_:
-            if (st == mat).all():
-                sco.append(-10)
-            else:
-                st_ = move.TestScore(st)
-                sco_ = st_.evaluate()
-                sco.append(sco_)
-        pp = np.array(sco).argmax()
-        return pp
+        mc = move.MenterCarol(mat)
+        return mc.choose(1000, 8)
 
     def step(self):
         # 可以返回状态、动作和奖励
-        mat2048_old = np.zeros((4, 4))
+        mat2048 = np.zeros((4, 4))
         tiles = self.grid.tiles
         for t in tiles:
-            mat2048_old[tiles[t].row, tiles[t].column] = tiles[t].value
+            mat2048[tiles[t].row, tiles[t].column] = tiles[t].value
         # 2048表格的2对数
-        pressed = self.ai_rule(mat2048_old)
+        pressed = self.ai_rule(mat2048)
         if pressed == 0:
             self.grid.move_tiles_left()
         elif pressed == 1:
@@ -203,13 +193,59 @@ class GabrieleCirulli2048(tk.Tk):
             self.grid.move_tiles_down()
         else:
             pass
+        mat2048 = np.zeros((4, 4))
+        tiles = self.grid.tiles
+        for t in tiles:
+            mat2048[tiles[t].row, tiles[t].column] = tiles[t].value
+        # 2048表格的2对数
         done = self.grid.no_more_hints()
-        if done:
-            pass
+        if self.train:
+            return mat2048, done
         else:
-            self.after(self.ai_time, self.step)
+            if done:
+                pass
+            else:
+                self.after(self.ai_time, self.step)
+
+    def testWin(self):
+        iters = 100
+        self.train = 1
+        win = []
+        highs = []
+        scores = []
+        for i in range(iters):
+            self.score.reset_score()
+            self.grid.reset_grid()
+            for n in range(self.START_TILES):
+                self.grid.pop_tile()
+            while True:
+                mat, done = self.step()
+                if done:
+                    break
+            if 2048 in mat:
+                isWin = 1
+                high = 1
+            elif 1024 in mat:
+                isWin = 0
+                high = 1
+            else:
+                isWin = 0
+                high = 0
+            score = self.score.get_score()
+            win.append(isWin)
+            scores.append(score)
+            highs.append(high)
+            print("第%d轮，得分%d，胜利与否%d,到达较高水平%d" % (i + 1, score, isWin, high))
+        # print("平均胜率为%.2f,平均分数为%.2f" % (sum(win) / float(iters), sum(scores) / float(iters)))
+        with open('mc_result.pkl', 'wb') as out:
+            pickle.dump((scores, win, highs), out)
+
+            # 读数据
+            # with open('mc_result.pkl', 'rb') as read:
+            #     scores, win = pickle.load(read)
 
 
 if __name__ == "__main__":
     ai = GabrieleCirulli2048()
+    ai.testWin()
     ai.run()

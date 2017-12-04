@@ -1,6 +1,6 @@
 import itertools
-
-Size = 4
+import random
+import numpy as np
 
 
 class UpdateNew(object):
@@ -12,10 +12,11 @@ class UpdateNew(object):
         self.matrix = matrix
         self.score = 0
         self.zerolist = []
+        self.size = 4
 
     def combineList(self, rowlist):
         start_num = 0
-        end_num = Size - rowlist.count(0) - 1
+        end_num = self.size - rowlist.count(0) - 1
         while start_num < end_num:
             if rowlist[start_num] == rowlist[start_num + 1]:
                 rowlist[start_num] *= 2
@@ -43,10 +44,10 @@ class UpdateNew(object):
         for i in range(m):
             newList = self.removeZero(list(matrix[i]))
             matrix[i] = newList
-            for k in range(Size - 1, Size - newList.count(0) - 1, -1):  # 添加所有有0的行号列号
+            for k in range(self.size - 1, self.size - newList.count(0) - 1, -1):  # 添加所有有0的行号列号
                 self.zerolist.append((i, k))
                 # if matrix.min() == 0 and (matrix!=lastmatrix).any():       #矩阵中有最小值0且移动后的矩阵不同，才可以添加0位置处添加随机数
-                # GameInit.initData(Size,matrix,self.zerolist)
+                # GameInit.initData(self.size,matrix,self.zerolist)
         return matrix
 
 
@@ -166,5 +167,74 @@ class TestScore(UpdateNew):
                             score += 120
         return score * 1.5
 
+    def has(self):
+        mat = self.matrix.copy()
+        if 2048 in mat:
+            return 1000
+        return 0
+
     def evaluate(self):
-        return self.EmptyTest() + self.Monotonicity() + self.ALLnum() + self.equall() + self.wheremax()
+        return self.EmptyTest() + 1.2*self.Monotonicity() + self.ALLnum() + self.equall() + 1.5*self.wheremax() + self.has()
+
+
+class MenterCarol:
+    def __init__(self, matrix):
+        self.matrix = matrix
+
+    def randomNew(self, mat):
+        # 输入矩阵得到随机生成的下个矩阵，以及得到是否结束
+        _value = random.choice([2, 4, 2, 2])
+        ran_list = []
+        for i in range(4):
+            for j in range(4):
+                if mat[i][j] == 0:
+                    ran_list.append((i, j))
+        if ran_list:
+            temp = random.choice(ran_list)
+            mat[temp[0]][temp[1]] = _value
+            done = 0
+        else:
+            done = 1
+        return mat, done
+
+    def _choose_(self, matr):
+        self.matrix = self.matrix
+        mat = matr.copy()  # 对数形式
+        next_ = [LeftAction(mat).handleData(), RightAction(mat).handleData(),
+                 UpAction(mat).handleData(), DownAction(mat).handleData()]
+        eval_ = 0
+        action_ = 0
+        for i in range(4):
+            if (next_[i] == mat).all():
+                continue
+            else:
+                temp_ev = TestScore(next_[i]).evaluate()
+                if temp_ev >= eval_:
+                    action_ = i
+                    eval_ = temp_ev
+        return next_[action_], eval_
+
+    def choose(self, iters=1, depth=1):
+        scores = []
+        mat = self.matrix
+        next_ = [LeftAction(mat).handleData(), RightAction(mat).handleData(),
+                 UpAction(mat).handleData(), DownAction(mat).handleData()]
+        for i in range(4):
+            state = next_[i]
+            score = 0
+            if (state == mat).all():
+                scores.append(-10)
+                continue
+            else:
+                score += TestScore(next_[i]).evaluate()
+                for _ in range(iters):
+                    state = next_[i]
+                    for t in range(depth):
+                        s1, done = self.randomNew(state)
+                        if done:
+                            break
+                        state, value = self._choose_(s1)
+                        score += value
+                score /= iters
+                scores.append(score)
+        return np.array(scores).argmax()
