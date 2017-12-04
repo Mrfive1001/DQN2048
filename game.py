@@ -172,10 +172,6 @@ class GabrieleCirulli2048(tk.Tk):
     # 规则式选择动作
     def ai_rule(self, mate):
         mat = mate.copy()  # 对数形式
-        mat = 2 ** mat
-        mat[mat == 1] = 0
-        if mat.shape != (4, 4):
-            mat.reshape((4, 4))
         next_ = [move.LeftAction(mat).handleData(), move.RightAction(mat).handleData(),
                  move.UpAction(mat).handleData(), move.DownAction(mat).handleData()]
         sco = []
@@ -184,23 +180,19 @@ class GabrieleCirulli2048(tk.Tk):
                 sco.append(-10)
             else:
                 st_ = move.TestScore(st)
-                sco_ = st_.EmptyTest() + st_.Monotonicity() + st_.ALLnum() + st_.equall() + st_.wheremax()
+                sco_ = st_.evaluate()
                 sco.append(sco_)
         pp = np.array(sco).argmax()
         return pp
 
-    def step(self, action=0):
+    def step(self):
         # 可以返回状态、动作和奖励
         mat2048_old = np.zeros((4, 4))
         tiles = self.grid.tiles
         for t in tiles:
-            mat2048_old[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
+            mat2048_old[tiles[t].row, tiles[t].column] = tiles[t].value
         # 2048表格的2对数
-        old = self.score.get_score()
-        if self.rule:
-            pressed = self.ai_rule(mat2048_old)
-        else:
-            pressed = action
+        pressed = self.ai_rule(mat2048_old)
         if pressed == 0:
             self.grid.move_tiles_left()
         elif pressed == 1:
@@ -211,42 +203,11 @@ class GabrieleCirulli2048(tk.Tk):
             self.grid.move_tiles_down()
         else:
             pass
-        mat2048 = np.zeros((4, 4))
-        tiles = self.grid.tiles
-        for t in tiles:
-            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
-        new = self.score.get_score()  # 读取总分数
         done = self.grid.no_more_hints()
-        mat2048 = mat2048.astype(int)
-        if self.train:
-            return mat2048.reshape(16), new - old, done
+        if done:
+            pass
         else:
-            if done:
-                pass
-            else:
-                self.after(self.ai_time, self.step)
-
-    def reset(self):
-        self.score.reset_score()
-        self.grid.clear_all()
-        for _ in range(self.START_TILES):
-            self.grid.pop_tile()  # 对象加1
-        mat2048 = np.zeros((4, 4))
-        tiles = self.grid.tiles
-        for t in tiles:
-            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
-        # 2048表格的2对数
-        mat2048 = mat2048.astype(int)
-        return mat2048.reshape(16)
-
-    def get_score(self):
-        return self.score.get_score()
-
-    def set_train(self, tt):
-        self.train = tt
-
-    def set_rule(self, rr):
-        self.rule = rr
+            self.after(self.ai_time, self.step)
 
 
 if __name__ == "__main__":

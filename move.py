@@ -7,6 +7,7 @@ class UpdateNew(object):
     """docstring for UpdateNew"""
 
     def __init__(self, matrix):
+        # 传入的矩阵必须是2的对数的4*4方阵
         super(UpdateNew, self).__init__()
         self.matrix = matrix
         self.score = 0
@@ -164,3 +165,6 @@ class TestScore(UpdateNew):
                         if mat[0, 1] >= 64:
                             score += 120
         return score * 1.5
+
+    def evaluate(self):
+        return self.EmptyTest() + self.Monotonicity() + self.ALLnum() + self.equall() + self.wheremax()
