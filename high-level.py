@@ -18,7 +18,7 @@ env = GabrieleCirulli2048(train=1, rule=0)
 totle = 0
 plt.figure()
 plt.ion()  # interactive mode on
-plt.axis([0, 1000, 0, 2000])
+plt.axis([0, 1000, 0, 20000])
 for i in range(1000):
     observation = env.reset()
     playloops = 0
@@ -28,12 +28,13 @@ for i in range(1000):
         observation_next, reward, done = env.step(action)
         if (observation_next == observation).all():
             reward = -10
-        RL.store_transition(observation, action, reward, observation_next)
+        RL.store_transition(observation, action, reward, observation_next, done)
         playloops += 1
         totle += 1
         if totle > 2000:
             RL.learn()
         if done:
+            # RL.store_transition(observation_next, action, env.get_score(), observation_next, done)
             break
         observation = observation_next
     if i == 0:

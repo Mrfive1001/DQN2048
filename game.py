@@ -55,7 +55,7 @@ class GabrieleCirulli2048(tk.Tk):
 
         self.train = kw.get("train", 0)  # 从类读取是否训练
         self.rule = kw.get("rule", 1)  # 从类读取是否训练
-        self.ai_time = kw.get('ai_time', 100)
+        self.ai_time = kw.get('ai_time', 12)
         self.initialize(**kw)  # 画图的初始化
 
     def run(self, **kw):
@@ -191,14 +191,14 @@ class GabrieleCirulli2048(tk.Tk):
 
     def step(self, action=0):
         # 可以返回状态、动作和奖励
-        mat2048 = np.zeros((4, 4))
+        mat2048_old = np.zeros((4, 4))
         tiles = self.grid.tiles
         for t in tiles:
-            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
+            mat2048_old[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
         # 2048表格的2对数
         old = self.score.get_score()
         if self.rule:
-            pressed = self.ai_rule(mat2048)
+            pressed = self.ai_rule(mat2048_old)
         else:
             pressed = action
         if pressed == 0:
@@ -211,8 +211,13 @@ class GabrieleCirulli2048(tk.Tk):
             self.grid.move_tiles_down()
         else:
             pass
+        mat2048 = np.zeros((4, 4))
+        tiles = self.grid.tiles
+        for t in tiles:
+            mat2048[tiles[t].row, tiles[t].column] = np.log2(tiles[t].value)
         new = self.score.get_score()  # 读取总分数
         done = self.grid.no_more_hints()
+        mat2048 = mat2048.astype(int)
         if self.train:
             return mat2048.reshape(16), new - old, done
         else:
